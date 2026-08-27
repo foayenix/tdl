@@ -793,6 +793,68 @@ component is built; session 15 is the sidebar around it, the section labels
 (`ledger` / `catalogue` / `public` / `system`, Plex Mono 9 · .14em in the
 artboard — another size §2 does not list), and Rust commands for the counts.
 
+### session 16 — the table primitive, and the unsourced row
+
+**Landed**
+
+- `src/table.ts` — `renderTable()`, `sourceCell()`, `markerColumn()`, and
+  `COLUMNS`: all four width tables from DESIGN.md §7, transcribed verbatim.
+  "Use them; do not let content decide" is enforced by setting
+  `grid-template-columns` from the percentages with no gap — the gutters are
+  cell padding, so the percentages stay percentages of the inner width.
+- `src/styles/table.css` — 33px rows (26 compact), 30px head in mono 9.5
+  uppercase, hairline separation, hover, `row-focus`, selected, zebra **off by
+  default**.
+- The unsourced row, per §6.
+- Two new specimens on artboard 01: `table row — monograph` at the corpus
+  widths, and `the unsourced row` at the indication widths. Those were the
+  specimens deferred in session 14; only `reference row` (session 27) and
+  `output card` (session 29) remain outstanding there.
+
+`just check` passes: 282 pytest, 6 cargo, tsc clean.
+
+**The unsourced row outranks everything else**
+
+`.is-unsourced` beats zebra, hover **and** `row-focus` in the cascade, and
+there is a rule for each. A row missing its source stays visibly missing it
+whatever else is true of it — that is what "the single most important visual
+rule in the application" has to mean in CSS.
+
+`sourceCell()` is the only way a source cell gets built. Given empty, null or
+whitespace it returns `⚠ source needed` in `secondary`. There is no path
+through it that yields a blank cell.
+
+**Three more DESIGN.md corrections — the artboards won again**
+
+1. **The mark is 4 × 16px in the `mk` column, not a 2px row border.** §6 said
+   "a 2px `secondary` marker on the leading edge", which reads as a border, and
+   I built it that way first — giving a doubled mark, since §7 also reserves an
+   `mk` column. Artboard 05 draws `width: 4px; height: 16px; border-radius: 1px`
+   inside that column and gives the row no border at all. Corrected in both.
+2. **Radius 1 exists.** That mark is radius 1, which §3's "Radius — and nothing
+   else" table did not list. DESIGN.md now lists it, used for that mark and
+   nothing else, and `test_design_tokens.py` expects {1, 2, 3, 4, 5}.
+3. **Tables inside a record use 14px horizontal padding, not 16.** The corpus
+   table is `7px 16px` as §3 says; the day log and the record's claim tables are
+   `7px 14px`. Not a contradiction — a narrower column — so it is a
+   `.table--inset` modifier and a new row in §3's layout table.
+
+Each carries a `> Corrected in session 16` note in DESIGN.md.
+
+**The mark is always in the DOM**, transparent when the row is sourced. A mark
+that appears and disappears would shift every cell in the row by 4px the moment
+a source is added, which is exactly the wrong feedback for adding one.
+
+**Week 3 is complete.** Shell, tokens, components and the table primitive all
+exist, and every one of them has been rendered in the actual Tauri window.
+
+**Next session starts at:** BUILD.md §6, week 4, item **17** — artboard 02's
+stat row and floor toggle: current streak · longest · floor met · minutes
+worked, all in `display num`. Note that `longest_streak` has no Rust query yet
+(session 03 built `current_streak` in Python only), and the floor toggle is the
+`entry.floor_day` column whose meaning is still an open question from that
+session.
+
 ---
 
 ## Open questions

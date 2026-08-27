@@ -1,0 +1,142 @@
+/* The table primitive. Row heights, paddings and the head height are literal
+   from DESIGN.md §3; column widths come from §7 and are set inline per table.
+
+   Row separation is a hairline, not a fill. Zebra striping is off by default
+   and is turned on only where a row is very wide. */
+
+.table {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  overflow: hidden;
+}
+
+.table__head {
+  display: grid;
+  align-items: center;
+  height: var(--table-head-height);
+  padding: 0 var(--space-16);
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  line-height: 1;
+  letter-spacing: var(--track-micro-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.table__row {
+  display: grid;
+  align-items: center;
+  width: 100%;
+  min-height: var(--row-height);
+  padding: var(--row-padding);
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell);
+  line-height: var(--leading-table-cell);
+  color: var(--ink);
+  text-align: left;
+}
+
+.table__row:last-child {
+  border-bottom: 0;
+}
+
+button.table__row {
+  cursor: pointer;
+}
+
+.table--compact .table__row {
+  min-height: var(--row-height-compact);
+  padding: var(--row-padding-compact);
+  font-size: var(--size-table-cell-sm);
+}
+
+/* Inside a record or a narrow panel the horizontal padding drops to 14px. */
+.table--inset .table__head,
+.table--inset .table__row {
+  padding-left: var(--space-14);
+  padding-right: var(--space-14);
+}
+
+/* Off by default. On only where a row is very wide — the day log. */
+.table--zebra .table__row:nth-child(even) {
+  background: var(--zebra);
+}
+
+.table__row:hover {
+  background: var(--row-hover);
+}
+
+.table__row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* Today's row, or the record in view. */
+.table__row.is-focused {
+  background: var(--row-focus);
+}
+
+.table__row.is-selected {
+  background: var(--primary-wash);
+}
+
+/* ── the unsourced row (DESIGN.md §6) ───────────────────────────────────
+   The single most important visual rule in the application. It outranks
+   hover, zebra and focus: a row missing its source stays visibly missing it
+   whatever else is true of it. */
+
+.table__row.is-unsourced,
+.table--zebra .table__row.is-unsourced:nth-child(even),
+.table__row.is-unsourced:hover,
+.table__row.is-unsourced.is-focused {
+  background: var(--warn-row);
+}
+
+.table__cell {
+  min-width: 0;
+  padding-right: var(--space-12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table__cell:last-child {
+  padding-right: 0;
+}
+
+.table__cell--right {
+  text-align: right;
+}
+
+.table__cell--marker {
+  padding-right: 0;
+}
+
+/* The mark lives in the `mk` column §7 reserves, not on the row's border.
+   It is always in the DOM and transparent when the row is sourced, so no row
+   shifts when one appears. */
+.table__marker {
+  display: block;
+  width: var(--marker-width);
+  height: var(--marker-height);
+  border-radius: var(--radius-marker);
+  background: transparent;
+}
+
+.table__row.is-unsourced .table__marker {
+  background: var(--secondary);
+}
+
+.table__row.is-selected .table__marker {
+  background: var(--primary);
+}
+
+/* Never blank. */
+.source-needed {
+  color: var(--secondary);
+  font-weight: 500;
+}

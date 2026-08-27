@@ -76,10 +76,15 @@ Note: artboard 01's caption still reads "8px grid". It is wrong — the real sca
 
 | px | for |
 |---|---|
-| 2 | checkbox, marker |
+| 1 | the unsourced-row marker |
+| 2 | checkbox |
 | 3 | chip, pill, table card, keycap |
 | 4 | button, field, panel |
 | 5 | overlay surface |
+
+> Corrected in session 16: this file listed 2 for "checkbox, marker". The
+> artboards draw the checkbox at radius 2 but the unsourced-row marker at
+> radius 1. 1 is now in the scale; it is used for that mark and nothing else.
 
 **Layout rules** — literal:
 
@@ -87,6 +92,7 @@ Note: artboard 01's caption still reads "8px grid". It is wrong — the real sca
 |---|---|
 | table row height | 33px · 26px compact |
 | table row padding | 7px 16px · 4px compact |
+| table row padding, inset | 7px 14px — tables inside a record or a narrow panel |
 | table head height | 30px, mono 9.5 uppercase |
 | sidebar width | 208px fixed |
 | filter rail width | 208px fixed |
@@ -216,8 +222,14 @@ paper `#14705B` · talk `#16211D` · long-form `#A8681F` · release `#A8681F` ·
 Any claim row — vernacular, indication, constituent, safety finding — without a source renders:
 
 - row background `warn-row` (`#FDF6EC` light, `#1F1A12` dark)
-- a 2px `secondary` marker on the leading edge
+- a **4 × 16px** `secondary` mark, radius 1, in the leading `mk` column — see §7
 - source cell reads `⚠ source needed` in `secondary`, never blank
+
+> Corrected in session 16: this file said "a 2px `secondary` marker on the
+> leading edge", which reads as a row border. Artboard 05 draws a 4 × 16px
+> element inside the `mk` column §7 already reserves, and gives the row no
+> border at all — the tint alone carries the row. The mark is present but
+> transparent on a sourced row, so nothing shifts when one appears.
 
 It follows into the section header (`7 · 1 unsourced`, count in `secondary`), the record rail, and the record header (`3 rows unsourced`). At the foot of the record:
 

@@ -258,7 +258,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 13 · **Artboard 01** — every token as a CSS variable, fonts self-hosted
 - [x] 14 · **Artboard 01** — component specimens with all five states (§4 of `DESIGN.md`)
 - [x] 15 · Left nav, live counts, real footer (path, size, last write)
-- [ ] 16 · Table primitive — column widths, row heights, hover/selected, **the unsourced row**
+- [x] 16 · Table primitive — column widths, row heights, hover/selected, **the unsourced row**
 
 **Week 4 — today and corpus**
 

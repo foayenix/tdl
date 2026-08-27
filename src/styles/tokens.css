@@ -154,6 +154,7 @@
   --space-40: 40px;
 
   /* ── radius (DESIGN.md §3) — and nothing else ────────────────────── */
+  --radius-marker: 1px;
   --radius-checkbox: 2px;
   --radius-chip: 3px;
   --radius-control: 4px;
@@ -164,6 +165,10 @@
   --row-height-compact: 26px;
   --row-padding: 7px 16px;
   --row-padding-compact: 4px 16px;
+  /* Tables inside a record or a narrow panel; artboards 02 and 05. */
+  --row-padding-inset: 7px 14px;
+  --marker-width: 4px;
+  --marker-height: 16px;
   --table-head-height: 30px;
   --sidebar-width: 208px;
   --filter-rail-width: 208px;

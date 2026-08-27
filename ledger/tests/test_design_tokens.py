@@ -122,9 +122,11 @@ class TestTheEvidenceRamp:
 
 
 class TestTheRadiusScale:
-    def test_only_the_four_chosen_radii_exist(self, tokens):
+    def test_only_the_five_chosen_radii_exist(self, tokens):
+        """1 was added in session 16 — the artboards draw the unsourced mark at
+        radius 1, and DESIGN.md §3 now lists it. Nothing else uses it."""
         radii = set(re.findall(r"--radius-[a-z]+:\s*(\d+)px", tokens))
-        assert radii == {"2", "3", "4", "5"}
+        assert radii == {"1", "2", "3", "4", "5"}
 
 
 class TestSpacing:

@@ -6,6 +6,7 @@
 // seed data."
 
 import { append, binomial, clear, el } from "../dom";
+import { COLUMNS, renderTable, sourceCell } from "../table";
 
 const COLOUR_GROUPS: Array<[string, string[]]> = [
   ["ground", ["ground", "surface", "inset", "zebra", "row-focus", "row-hover"]],
@@ -226,6 +227,100 @@ function chips(): HTMLElement {
   );
 }
 
+/** Artboard 01's `table row — monograph`, at the corpus column widths. */
+function corpusRows(): HTMLElement {
+  return renderTable(COLUMNS.corpus, [
+    {
+      cells: [
+        binomial("Prunus africana", "(Hook.f.) Kalkman"),
+        "Rosaceae",
+        "stem bark",
+        el("span", { class: "chip chip--status-reviewed" }, "reviewed"),
+        "9",
+        el(
+          "span",
+          { class: "chip chip--ev3" },
+          el("span", { class: "chip__code" }, "E6"),
+          " meta-analysis",
+        ),
+        "2026-08-24",
+      ],
+    },
+    {
+      cells: [
+        binomial("Khaya senegalensis", "(Desr.) A.Juss."),
+        "Meliaceae",
+        "stem bark",
+        el("span", { class: "chip chip--status-drafted" }, "drafted"),
+        "3",
+        el(
+          "span",
+          { class: "chip chip--ev1" },
+          el("span", { class: "chip__code" }, "E3"),
+          " in vivo",
+        ),
+        "2026-08-24",
+      ],
+      focused: true,
+    },
+  ]);
+}
+
+/**
+ * The unsourced row (DESIGN.md §6) at the indication column widths — the rule
+ * every claim table in the application obeys.
+ */
+function unsourcedRows(): HTMLElement {
+  return renderTable(COLUMNS.indications, [
+    {
+      cells: [
+        null,
+        "benign prostatic hyperplasia",
+        "European phytotherapy",
+        "France, Germany",
+        el(
+          "span",
+          { class: "chip chip--ev3" },
+          el("span", { class: "chip__code" }, "E6"),
+          " meta-analysis",
+        ),
+        sourceCell("R2"),
+      ],
+    },
+    {
+      cells: [
+        null,
+        "urinary retention",
+        "Kikuyu",
+        "central Kenya",
+        el(
+          "span",
+          { class: "chip chip--ev0" },
+          el("span", { class: "chip__code" }, "E1"),
+          " traditional only",
+        ),
+        sourceCell(null),
+      ],
+      unsourced: true,
+    },
+    {
+      cells: [
+        null,
+        "inflammatory joint pain",
+        "Hausa",
+        "northern Nigeria",
+        el(
+          "span",
+          { class: "chip chip--ev1" },
+          el("span", { class: "chip__code" }, "E2"),
+          " in vitro",
+        ),
+        sourceCell("field notes 2025-11"),
+      ],
+    },
+  ], { inset: true });
+}
+
 export function renderSystem(host: HTMLElement): void {
   clear(host);
 
@@ -290,6 +385,12 @@ export function renderSystem(host: HTMLElement): void {
         }),
       ),
       panel("chips", "status · evidence · severity · reading · kind", chips()),
+      panel("table row — monograph", "widths from DESIGN.md §7 · today's row is row-focus", corpusRows()),
+      panel(
+        "the unsourced row",
+        "warn-row tint · 4 × 16 secondary mark · never a blank source cell",
+        unsourcedRows(),
+      ),
     ),
   );
 }
