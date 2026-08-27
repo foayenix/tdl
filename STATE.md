@@ -336,6 +336,71 @@ recorded fixture for the parsing test and exactly one live test marked
 `@pytest.mark.network`, which `pyproject.toml` already excludes from
 `just check`.
 
+### session 08 — `ledger ref` resolves a DOI, and survives not being able to
+
+**Landed**
+
+- `ledger/crossref.py` — `normalise_doi()`, `fetch()`, `parse()`, `lookup()`,
+  and three named failure modes: `NotFound`, `Offline`, `CrossrefError`. A DOI
+  that does not exist and a network that does not answer are different events
+  and the tool says which.
+- `ledger/references.py` — `save()`, `record_unresolved()`, `cite()`,
+  `counts_by_read_state()`.
+- `ledger ref DOI [--json] [--timeout]`.
+- 45 tests. `just check` passes: ruff clean, 178 green, 1 deselected (network).
+
+**DOI normalisation**
+
+Nine paste shapes land on one string: resolver prefixes (`https://doi.org/`,
+`dx.doi.org`, `doi:`), surrounding whitespace, a trailing full stop from prose,
+and **case**. DOIs are case-insensitive, so two casings of one DOI would be two
+rows for one paper. A malformed DOI is refused **before** the network is
+touched, and there is a test that fails if that ever stops being true.
+
+**The offline path, verified for real**
+
+Crossref is unreachable from this container (see below), so the failure path
+was exercised against a genuinely dead network rather than a mock:
+
+```
+R1 · 10.1016/j.jep.2019.112202
+10.1016/j.jep.2019.112202 · queued
+could not reach Crossref: … 403 Forbidden — kept as unresolved, run again later
+```
+
+The DOI is kept with `added_from = 'offline'` and `title` set to the DOI
+itself. Losing a paste because Crossref was down is the capture friction §5
+says kills systems like this. Running `ledger ref` on the same DOI later fills
+the row in — **but only while it is still marked `offline`**. A row whose title
+was corrected by hand is never clobbered by a retry; there is a test for that.
+
+**§7 test 6 is landed but its fixture is not a recording — this needs you**
+
+`api.crossref.org` is refused by this environment's egress proxy: 403 to the
+CONNECT, which is an organisation policy denial, not a transient failure. So
+there is no way to record a real response here, and inventing a paper and a DOI
+is precisely what §8 forbids.
+
+`fixtures/crossref_shape.json` therefore uses Crossref's own **`10.5555` test
+prefix** and strings that read `PLACEHOLDER`, and it exercises the response
+*shape* — the title/container-title arrays, the author list, the
+`issued.date-parts` fallback chain. `fixtures/README.md` carries the one curl
+command that replaces it. The live test is written, marked
+`@pytest.mark.network`, and excluded from `just check`; running
+`pytest -m network ledger/tests` on the Mac both proves the parser against the
+real API and is the quickest way to capture the recording.
+
+**`access` is left NULL.** Crossref has no dependable open/closed field.
+Deriving one from the licence block would put a wrong answer in a record that
+gets cited, which is the failure §4 warns about for names. The library's
+metadata table shows `access`; where it comes from is an open question.
+
+**Next session starts at:** BUILD.md §6, week 2, item **09** — the GBIF
+resolver, the 0.90 confidence threshold and the review queue, with §7 test 5.
+Session 04 left a question there: whether artboard 08 state 4's candidate list
+must persist. **GBIF is likely blocked by the same policy as Crossref** — check
+first, and expect to land the resolver with a shape fixture the same way.
+
 ---
 
 ## Open questions
@@ -372,6 +437,13 @@ answer them alone.
 - **New (06):** §4's git habit is `sqlite3 ledger.sqlite .dump`. That ordering
   cannot restore this schema (see session 06) and the binary is not present
   here. `just dump` is planned to shell into `ledger dump` instead — confirm.
+
+- **New (08):** where does `reference.access` come from? Crossref does not say
+  reliably. Left NULL rather than guessed. Unpaywall would answer it but is
+  another network dependency and another key.
+- **New (08):** the Crossref fixture is a shape fixture, not a recording,
+  because this environment is policy-blocked from `api.crossref.org`. Replace it
+  before v0.1 — `ledger/tests/fixtures/README.md` has the command.
 
 ---
 

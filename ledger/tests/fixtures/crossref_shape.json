@@ -1,0 +1,23 @@
+{
+  "status": "ok",
+  "message-type": "work",
+  "message-version": "1.0.0",
+  "message": {
+    "DOI": "10.5555/SHAPE.FIXTURE.001",
+    "type": "journal-article",
+    "title": ["PLACEHOLDER TITLE — not a real paper"],
+    "container-title": ["PLACEHOLDER JOURNAL"],
+    "volume": "241",
+    "issue": "3",
+    "page": "112202",
+    "author": [
+      {"given": "A.", "family": "PLACEHOLDER-ONE", "sequence": "first"},
+      {"given": "B.", "family": "PLACEHOLDER-TWO", "sequence": "additional"}
+    ],
+    "issued": {"date-parts": [[2019, 7, 15]]},
+    "published-print": {"date-parts": [[2019, 8]]},
+    "created": {"date-parts": [[2019, 5, 2]]},
+    "publisher": "PLACEHOLDER PUBLISHER",
+    "URL": "https://doi.org/10.5555/SHAPE.FIXTURE.001"
+  }
+}
