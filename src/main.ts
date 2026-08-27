@@ -1,6 +1,6 @@
 import { append, clear, el } from "./dom";
-import { navCounts, status, todayStats } from "./ledger";
-import type { NavCounts, Status, TodayStats } from "./ledger";
+import { navCounts, note, status, todayStats } from "./ledger";
+import type { NavCounts, SavedNote, Status, TodayStats } from "./ledger";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
 import { renderToday } from "./screens/today";
@@ -15,6 +15,7 @@ type Loaded = {
   status: Status | null;
   counts: NavCounts | null;
   today: TodayStats | null;
+  note: SavedNote | null;
   error: string | null;
 };
 
@@ -24,12 +25,13 @@ async function load(): Promise<Loaded> {
       status: await status(),
       counts: await navCounts(),
       today: await todayStats(),
+      note: await note(),
       error: null,
     };
   } catch (error) {
     // A ledger that is missing, or at a schema this build does not read, is a
     // real state with a real instruction. The message says which.
-    return { status: null, counts: null, today: null, error: String(error) };
+    return { status: null, counts: null, today: null, note: null, error: String(error) };
   }
 }
 
@@ -38,7 +40,7 @@ async function render(): Promise<void> {
   if (!app) return;
 
   const route = routeFromHash();
-  const { status: connected, counts, today, error } = await load();
+  const { status: connected, counts, today, note: saved, error } = await load();
 
   clear(app);
 
@@ -54,7 +56,7 @@ async function render(): Promise<void> {
     screen,
   );
 
-  if (route === "today" && today) renderToday(screen, today, () => void render());
+  if (route === "today" && today && saved) renderToday(screen, today, saved, () => void render());
   else if (route === "system") renderSystem(screen);
 }
 

@@ -5,7 +5,8 @@
 use std::path::PathBuf;
 
 use ledger_app::{
-    default_path, nav_counts, set_floor_day, status, today_stats, NavCounts, Status, TodayStats,
+    add_output, default_path, nav_counts, note_for_today, open_monograph, save_note, set_floor_day,
+    status, today_stats, NavCounts, SavedNote, Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -36,6 +37,26 @@ fn ledger_set_floor_day(floor_day: bool) -> std::result::Result<TodayStats, Stri
     set_floor_day(&ledger_path(), floor_day).map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+fn ledger_note() -> std::result::Result<SavedNote, String> {
+    note_for_today(&ledger_path()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_save_note(note: String) -> std::result::Result<SavedNote, String> {
+    save_note(&ledger_path(), &note).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_open_monograph(name: String) -> std::result::Result<i64, String> {
+    open_monograph(&ledger_path(), &name).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_add_output(kind: String, title: String) -> std::result::Result<i64, String> {
+    add_output(&ledger_path(), &kind, &title).map_err(|error| error.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -43,7 +64,11 @@ fn main() {
             ledger_status,
             ledger_nav_counts,
             ledger_today,
-            ledger_set_floor_day
+            ledger_set_floor_day,
+            ledger_note,
+            ledger_save_note,
+            ledger_open_monograph,
+            ledger_add_output
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

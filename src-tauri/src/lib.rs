@@ -26,6 +26,8 @@ pub enum Error {
         expected: i64,
     },
     NoDatabase(PathBuf),
+    /// A write the interface asked for that the record will not take.
+    Refused(String),
 }
 
 impl fmt::Display for Error {
@@ -40,6 +42,7 @@ impl fmt::Display for Error {
             Error::NoDatabase(path) => {
                 write!(f, "no ledger at {}. Run `ledger migrate`.", path.display())
             }
+            Error::Refused(why) => write!(f, "{why}"),
         }
     }
 }
@@ -233,6 +236,130 @@ pub fn today_stats(path: &Path) -> Result<TodayStats> {
         )?,
         days_logged: count(&connection, "SELECT count(*) FROM entry")?,
     })
+}
+
+/// The note as the day holds it, plus what the autosave footer reports.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct SavedNote {
+    pub entry_id: i64,
+    pub note: String,
+    /// `autosaved 14:22` — local time, as the artboard sets it.
+    pub saved_at: String,
+}
+
+/// Write today's note. Opens the day if it is not open yet.
+///
+/// The same path serves the 2-second autosave and the explicit `Save entry`
+/// button: one write, so the two can never disagree about what is on disk.
+pub fn save_note(path: &Path, note: &str) -> Result<SavedNote> {
+    let connection = open_checked(path)?;
+
+    connection.execute(
+        "INSERT INTO entry (date, note) VALUES (date('now'), ?1)
+         ON CONFLICT(date) DO UPDATE SET note = ?1, updated_at = datetime('now')",
+        [note],
+    )?;
+
+    let (entry_id, saved_at) = connection.query_row(
+        "SELECT id, strftime('%H:%M', updated_at, 'localtime') FROM entry WHERE date = date('now')",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+
+    Ok(SavedNote {
+        entry_id,
+        note: note.to_string(),
+        saved_at,
+    })
+}
+
+pub fn note_for_today(path: &Path) -> Result<SavedNote> {
+    let connection = open_checked(path)?;
+
+    let found: Option<(i64, String, String)> = connection
+        .query_row(
+            "SELECT id, note, strftime('%H:%M', updated_at, 'localtime')
+             FROM entry WHERE date = date('now')",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .ok();
+
+    Ok(match found {
+        Some((entry_id, note, saved_at)) => SavedNote {
+            entry_id,
+            note,
+            saved_at,
+        },
+        None => SavedNote {
+            entry_id: 0,
+            note: String::new(),
+            saved_at: String::new(),
+        },
+    })
+}
+
+/// The id of today's entry, opening the day if it is not open yet.
+fn today_entry(connection: &Connection) -> Result<i64> {
+    connection.execute(
+        "INSERT OR IGNORE INTO entry (date) VALUES (date('now'))",
+        [],
+    )?;
+    Ok(
+        connection.query_row("SELECT id FROM entry WHERE date = date('now')", [], |row| {
+            row.get(0)
+        })?,
+    )
+}
+
+/// A monograph skeleton opened from the deposit row.
+///
+/// The typed name goes straight into `accepted_name` with the identifiers left
+/// NULL — that NULL is what puts the record in the review queue, where
+/// `ledger resolve` picks it up. Nothing here guesses at a name.
+pub fn open_monograph(path: &Path, name: &str) -> Result<i64> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(Error::Refused("a monograph needs a name".into()));
+    }
+
+    let connection = open_checked(path)?;
+
+    if let Ok(existing) = connection.query_row(
+        "SELECT id FROM monograph WHERE accepted_name = ?1",
+        [name],
+        |row| row.get(0),
+    ) {
+        return Ok(existing);
+    }
+
+    connection.execute("INSERT INTO monograph (accepted_name) VALUES (?1)", [name])?;
+    Ok(connection.last_insert_rowid())
+}
+
+/// An output recorded against today's entry.
+pub fn add_output(path: &Path, kind: &str, title: &str) -> Result<i64> {
+    let title = title.trim();
+    if title.is_empty() {
+        return Err(Error::Refused("an output needs a title".into()));
+    }
+
+    let connection = open_checked(path)?;
+    let entry_id = today_entry(&connection)?;
+
+    // The CHECK constraint on `output.kind` is what actually refuses an
+    // invented kind; this turns that into a sentence rather than a raw error.
+    if !["paper", "talk", "long-form", "release", "note"].contains(&kind) {
+        return Err(Error::Refused(format!("{kind} is not an output kind")));
+    }
+
+    connection.execute(
+        "INSERT INTO output (kind, title, date, entry_id)
+         VALUES (?1, ?2, date('now'), ?3)",
+        rusqlite::params![kind, title, entry_id],
+    )?;
+
+    Ok(connection.last_insert_rowid())
 }
 
 /// Mark today a floor day, or unmark it. Opens the day if it is not open yet —

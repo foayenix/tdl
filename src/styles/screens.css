@@ -22,7 +22,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-28);
-  padding-top: var(--space-20);
+  padding-top: var(--space-6);
 }
 
 .specimen {
@@ -174,6 +174,10 @@
   min-width: 0;
   overflow: auto;
   padding: var(--content-padding);
+  /* Artboard 02 stacks the screen's sections 14px apart. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
 }
 
 /* ── left nav (artboard 02) — 208px fixed ───────────────────────────── */
@@ -297,9 +301,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-.today__deposit {
+.today__card {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 196px;
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: var(--radius-control);
@@ -392,4 +397,154 @@
 :root[data-theme="dark"] .segment.is-selected {
   color: var(--ground);
   background: var(--ink);
+}
+
+/* ── artboard 02 · the note ─────────────────────────────────────────── */
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  padding: var(--space-14) var(--space-18);
+  min-width: 0;
+}
+
+.note__label {
+  color: var(--muted);
+}
+
+.note__body {
+  flex: 1;
+  min-height: 132px;
+  resize: none;
+  background: var(--inset);
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 10px var(--space-12);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.note__body:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.note__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.note__saved {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+}
+
+/* ── artboard 02 · deposit rows ─────────────────────────────────────── */
+
+.deposit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.deposit__label {
+  color: var(--muted);
+}
+
+.deposit__rows {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.deposit__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  padding: var(--space-6) var(--space-14);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.deposit__row:last-child {
+  border-bottom: 0;
+}
+
+.deposit__kind {
+  width: 84px;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  line-height: 1;
+  letter-spacing: var(--track-micro-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deposit__field {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell);
+  color: var(--ink);
+  background: var(--inset);
+  border: 0;
+  border-radius: var(--radius-chip);
+  padding: 5px 9px;
+}
+
+.deposit__field::placeholder {
+  color: var(--disabled-ink);
+}
+
+.deposit__field:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Artboard 02's slot is 168px. Widened to 196 so `resolves against GBIF on
+   save` — artboard 08 state 6's own words — sits on one line rather than
+   wrapping and making one row taller than the other two. */
+.deposit__meta {
+  width: 208px;
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.deposit__kind-select {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  padding: var(--space-4) var(--space-6);
+}
+
+.deposit__row .button,
+.deposit__row .button-quiet {
+  flex: none;
+  padding: var(--space-6) var(--space-12);
+  font-size: var(--size-emphasis);
+}
+
+/* Anything the interface could not do. Never silent. */
+.trouble:not(:empty) {
+  font-family: var(--font-sans);
+  font-size: var(--size-emphasis);
+  font-weight: 500;
+  color: var(--secondary);
+  background: var(--secondary-wash);
+  border: 1px solid var(--secondary-ring);
+  border-radius: var(--radius-chip);
+  padding: var(--space-6) var(--space-12);
 }

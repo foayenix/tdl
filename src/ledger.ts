@@ -43,6 +43,31 @@ export async function setFloorDay(floorDay: boolean): Promise<TodayStats> {
   return invoke<TodayStats>("ledger_set_floor_day", { floorDay });
 }
 
+export type SavedNote = {
+  entry_id: number;
+  note: string;
+  saved_at: string;
+};
+
+export async function note(): Promise<SavedNote> {
+  return invoke<SavedNote>("ledger_note");
+}
+
+export async function saveNote(text: string): Promise<SavedNote> {
+  return invoke<SavedNote>("ledger_save_note", { note: text });
+}
+
+export async function openMonograph(name: string): Promise<number> {
+  return invoke<number>("ledger_open_monograph", { name });
+}
+
+export async function addOutput(kind: string, title: string): Promise<number> {
+  return invoke<number>("ledger_add_output", { kind, title });
+}
+
+export const OUTPUT_KINDS = ["paper", "talk", "long-form", "release", "note"] as const;
+export type OutputKind = (typeof OUTPUT_KINDS)[number];
+
 /** The floor is 20 minutes. */
 export const FLOOR_MINUTES = 20;
 

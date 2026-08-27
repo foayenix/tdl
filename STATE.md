@@ -907,6 +907,74 @@ note (2s debounce, footer `autosaved 14:22 · entry 1,412`, plus an explicit
 of the deposit card is already reserved for it. **`Fetch` needs the sidecar,
 which is session 19** — 18 should build the row and leave the call to 19.
 
+### session 18 — the autosaving note and the three deposit rows
+
+**Landed**
+
+- Rust: `save_note()`, `note_for_today()`, `open_monograph()`, `add_output()`,
+  and an `Error::Refused` variant so a refusal reaches the interface as a
+  sentence rather than a raw SQL error.
+- `src/screens/note.ts` — 2-second debounce, save on blur, explicit
+  `Save entry`, footer `autosaved 13:01 · entry 47`.
+- `src/screens/deposit.ts` — the three rows: monograph `Open` (primary),
+  reference `Fetch` (secondary), output `Add` (quiet).
+- 10 Rust tests.
+
+`just check` passes: 282 pytest, 28 cargo, tsc clean.
+
+**One write path, so the footer cannot lie**
+
+The debounce, the blur and the `Save entry` button all call the same
+`save_note`. A footer that says `autosaved 13:01` when a different code path
+did the writing is how "it said it saved" becomes "it did not save". A failed
+save writes `not saved` in the footer and the message into the trouble strip —
+never silence.
+
+Blur saves too. Two seconds of quiet is the specification; clicking away is a
+stronger signal than that and waiting it out would be a way to lose a note.
+
+**`entry 1,412` is read as the entry's id**
+
+Artboard 02's footer is `autosaved 14:22 · entry 1,412`. That could be the
+entry's row id or a length. It is rendered as the **id**: an autosave footer
+saying when it saved and *which record it wrote* is the natural reading, and
+the library rail labels its length figure explicitly (`62 words`) where it
+means one. The artboard's own numbers do not reconcile either way — the same
+screen reads `floor met 118 / 140` — so this is a fixture inconsistency, not a
+clue. Open question below.
+
+**`Fetch` is wired to a refusal, not to nothing**
+
+Crossref is the sidecar's, and the sidecar is session 19. Pressing `Fetch`
+today says so and names the CLI command that does work meanwhile. A button
+that silently does nothing is worse than one that explains itself.
+
+**The note is plain text, and the binomial in it is not italic**
+
+Artboard 02 renders *Prunus africana* italic inside the note. That is a
+`<textarea>` holding a TEXT column. Italicising it would need either rich text
+— a different storage format, and not one §4 describes — or detecting binomials
+in free prose, which is guessing at botany. Neither is warranted for a field
+you type into. §2's "botanical names are always italic" is honoured everywhere
+the *record* renders a name: the record title, table cells, output cards. Noted
+as a deliberate difference.
+
+**Two smaller differences from the artboard**
+
+- The meta slot is **208px, not 168** — `resolves against GBIF on save`
+  (artboard 08 state 6's own words) wraps at 168 and makes one row taller than
+  the other two. Widening the slot was better than editing the copy.
+- The output row's meta slot holds a **kind chooser**, because an output needs
+  one of the five kinds and the artboard's `{{ q.meta }}` is unbound. It is the
+  only invented control on the screen and it is doing real work.
+
+**Next session starts at:** BUILD.md §6, week 4, item **19** — the fourteen-day
+table, and the sidecar wired to `Fetch`. The table primitive and
+`COLUMNS.dayLog` are ready; the header reads `1,025 min · 73 avg · 4 floor
+days` and today's row is `row-focus`. The sidecar shim from session 12 already
+runs the CLI, so `ledger ref <doi> --json` can be called through it — and its
+offline failure path (session 08) is what the row's meta should show.
+
 ---
 
 ## Open questions
@@ -961,6 +1029,9 @@ answer them alone.
 
 - **New (17):** in `floor met 118 / 140`, is 140 days *logged* or calendar days
   since the first entry? Built as days logged.
+
+- **New (18):** is `entry 1,412` in artboard 02's autosave footer the entry's
+  row id, or a length? Rendered as the id.
 
 ---
 

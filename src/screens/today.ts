@@ -5,7 +5,9 @@
 // mark, never an empty bar (DESIGN.md §8). Nothing on this screen counts down.
 
 import { append, clear, el } from "../dom";
-import { dayName, setFloorDay, type TodayStats } from "../ledger";
+import { dayName, setFloorDay, type SavedNote, type TodayStats } from "../ledger";
+import { renderDeposit } from "./deposit";
+import { renderNote } from "./note";
 
 /** `current streak 41 days` — label muted, the number in ink at 13px. */
 function stat(label: string, value: number, suffix?: string): HTMLElement {
@@ -94,19 +96,27 @@ function minutesWorked(stats: TodayStats, reload: () => void): HTMLElement {
 export function renderToday(
   host: HTMLElement,
   stats: TodayStats,
+  saved: SavedNote,
   reload: () => void,
 ): void {
   clear(host);
 
+  // Anything the interface could not do says so here rather than failing quietly.
+  const trouble = el("div", { class: "trouble" });
+  const say = (message: string) => {
+    trouble.textContent = message;
+  };
+
   append(
     host,
     head(stats),
+    trouble,
     el(
       "div",
-      { class: "today__deposit" },
+      { class: "today__card" },
       minutesWorked(stats, reload),
-      // The note and the three deposit rows land in session 18.
-      el("div", { class: "today__note-slot" }),
+      renderNote(saved, say),
     ),
+    renderDeposit(reload, say),
   );
 }
