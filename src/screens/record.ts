@@ -7,8 +7,20 @@ import { append, clear, el } from "../dom";
 import { evidenceChip, severityChip, statusChip } from "../chips";
 import { EVIDENCE, EVIDENCE_LABEL, evidenceCode, type Evidence } from "../evidence";
 import { SEVERITY } from "../evidence";
-import { benefitSharing, claims, sectionSources, type Claim, type Record } from "../ledger";
+import {
+  benefitSharing,
+  citedByOutputs,
+  claims,
+  queuedReading,
+  recordReferences,
+  sectionSources,
+  unsourcedBySection,
+  type Claim,
+  type Record,
+} from "../ledger";
 import { renderBenefitSharing, renderProse } from "./prose";
+import { renderRail, type RailSection } from "./rail";
+import { renderReferences, renderReviewedStatus } from "./references";
 import { renderSection, type SectionSpec } from "./section";
 import { COLUMNS } from "../table";
 
@@ -253,6 +265,18 @@ export async function renderRecord(
   const column = el("div", { class: "record__column" });
   append(body, column);
 
+  const railSections: RailSection[] = [];
+  const unsourcedCounts = new Map(
+    await unsourcedBySection(monograph.id).catch((): [string, number][] => []),
+  );
+
+  // Every `R…` on this screen is a position in this record's reference list,
+  // so the numbers in a source cell and in the references section agree.
+  const references = await recordReferences(monograph.id).catch(() => []);
+  const numbers = new Map(references.map((r) => [r.reference_id, r.position]));
+  const positionsOf = (ids: number[]) =>
+    ids.map((id) => numbers.get(id)).filter((n): n is number => n !== undefined);
+
   append(host, header(monograph, onSave), trouble, body);
 
   // Artboard 05's order: summary, then the claim sections, then preparation
@@ -264,7 +288,7 @@ export async function renderRecord(
         field: "summary",
         title: "summary",
         text: monograph.summary,
-        sources: summarySources,
+        sources: positionsOf(summarySources),
         rewritten: monograph.summary_rewritten_at,
       },
       monograph.id,
@@ -291,6 +315,7 @@ export async function renderRecord(
         spec,
         monograph.id,
         rows,
+        numbers,
         addingIn === spec.table,
         () => {
           addingIn = addingIn === spec.table ? null : spec.table;
@@ -303,6 +328,13 @@ export async function renderRecord(
         say,
       ),
     );
+
+    railSections.push({
+      anchor: `section-${spec.table}`,
+      label: spec.title,
+      count: rows.length,
+      unsourced: unsourcedCounts.get(spec.table) ?? 0,
+    });
   }
 
   const preparationSources = await sectionSources(monograph.id, "preparation").catch(() => []);
@@ -312,7 +344,7 @@ export async function renderRecord(
         field: "preparation",
         title: "preparation",
         text: monograph.preparation,
-        sources: preparationSources,
+        sources: positionsOf(preparationSources),
       },
       monograph.id,
       editingProse === "preparation",
@@ -324,6 +356,8 @@ export async function renderRecord(
       say,
     ),
   );
+
+  column.appendChild(renderReferences(references));
 
   // Benefit-sharing is not optional chrome; it appears on every record.
   const consent = await benefitSharing(monograph.id).catch(() => null);
@@ -342,4 +376,21 @@ export async function renderRecord(
       ),
     );
   }
+
+  railSections.push({
+    anchor: "section-references",
+    label: "references",
+    count: references.length,
+    unsourced: 0,
+  });
+
+  // DESIGN.md §6's closing line, at the foot of the record.
+  column.appendChild(renderReviewedStatus(monograph.unsourced, monograph.status));
+
+  const [outputs, queued] = await Promise.all([
+    citedByOutputs(monograph.id).catch((): never[] => []),
+    queuedReading(monograph.id).catch(() => ({ count: 0, oldest: null })),
+  ]);
+
+  body.appendChild(renderRail(railSections, outputs, queued));
 }

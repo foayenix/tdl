@@ -270,3 +270,81 @@ fn an_indication_defaults_to_traditional_only_when_no_level_is_given() {
         "a blank evidence level must not be stored"
     );
 }
+
+#[test]
+fn references_are_numbered_within_the_record() {
+    // Artboard 05 labels them R1–Rn and the summary cites `sources R1, R2, R6`,
+    // so the number is a position in this record, not the library's row id.
+    let scratch = Scratch::new("numbering");
+    let database = scratch.database();
+    let connection = open_checked(&database).expect("open");
+
+    for id in [40, 41, 42] {
+        connection
+            .execute(
+                "INSERT INTO reference (id, doi, title) VALUES (?1, ?2, ?3)",
+                rusqlite::params![id, format!("10.1/{id}"), format!("Paper {id}")],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO monograph_reference (monograph_id, reference_id, section)
+                 VALUES (1, ?1, 'summary')",
+                [id],
+            )
+            .unwrap();
+    }
+
+    let bound = ledger_app::record_references(&database, 1).expect("references");
+
+    assert_eq!(
+        bound.iter().map(|r| r.position).collect::<Vec<_>>(),
+        vec![1, 2, 3],
+        "positions start at one however high the library ids are"
+    );
+    assert_eq!(
+        bound.iter().map(|r| r.reference_id).collect::<Vec<_>>(),
+        vec![40, 41, 42]
+    );
+}
+
+#[test]
+fn a_reference_cited_in_two_sections_is_one_reference() {
+    let scratch = Scratch::new("two_sections");
+    let database = scratch.database();
+    let connection = open_checked(&database).expect("open");
+
+    connection
+        .execute(
+            "INSERT INTO reference (id, doi, title) VALUES (7, '10.1/x', 'A paper')",
+            [],
+        )
+        .unwrap();
+    for section in ["summary", "indication"] {
+        connection
+            .execute(
+                "INSERT INTO monograph_reference (monograph_id, reference_id, section)
+                 VALUES (1, 7, ?1)",
+                [section],
+            )
+            .unwrap();
+    }
+
+    let bound = ledger_app::record_references(&database, 1).expect("references");
+    assert_eq!(bound.len(), 1, "one reference, cited twice");
+    assert_eq!(bound[0].sections.len(), 2);
+
+    // And the rail's queued count must not double it either.
+    let queued = ledger_app::queued_reading(&database, 1).expect("queued");
+    assert_eq!(queued.count, 1);
+}
+
+#[test]
+fn a_record_with_no_output_is_cited_by_nothing() {
+    let scratch = Scratch::new("cited");
+    let database = scratch.database();
+
+    assert!(ledger_app::cited_by_outputs(&database, 1)
+        .expect("cited")
+        .is_empty());
+}

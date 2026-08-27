@@ -1387,6 +1387,55 @@ outputs`, `3 references queued, unread →`), and the reviewed-status block at
 the foot of the record. That block is DESIGN.md §6's closing line and the
 database already enforces what it says.
 
+### session 27 — the references section, the sticky rail, the reviewed block
+
+**Landed**
+
+- Rust: `record_references()`, `cited_by_outputs()`, `queued_reading()`,
+  `unsourced_by_section()`.
+- `src/screens/references.ts` — `R1`–`Rn`, citation, DOI, reading state, and
+  which sections cite each one.
+- `src/screens/rail.ts` — the 224px rail, sticky at top 0: the jump list with
+  counts and unsourced counts in `secondary`, `cited by your outputs`, and
+  `references queued, unread →`.
+- `renderReviewedStatus` — DESIGN.md §6's closing line, at the foot of the
+  record.
+- 3 more Rust tests (59 in total).
+
+`just check` passes: 282 pytest, 59 cargo, tsc clean.
+
+**Week 5 is complete. The monograph record is built** — the screen §1 says does
+not move, and the one it says the product actually is.
+
+**`R…` is a position in the record, not a library id**
+
+Artboard 05 labels the section `R1`–`Rn` and the summary cites `sources R1, R2,
+R6`. I had first rendered the library's row id, which happened to look
+plausible on a small database, would have read `R187` on a real one and — worse
+— would not have matched the numbers in the references section directly below.
+Every `R…` on the screen now comes from one map built from the record's own
+bound list.
+
+One consequence worth having: a `source_note` that reads `R5` — free text
+someone typed — renders plain, while a real binding renders in `primary`. The
+screen distinguishes a citation from a string that looks like one.
+
+**Two bugs the screenshots found**
+
+1. **`6 references queued` on a record with three.** The join to
+   `monograph_reference` duplicates a reference cited in two sections.
+   `count(DISTINCT r.id)`, with a test that binds one reference twice and
+   asserts both the references list and the queued count read 1.
+2. The rail's `cited by your outputs` had to say something when empty. It reads
+   **`never published on`** — the corpus footer's gap query seen from the other
+   end, and not softened.
+
+**Next session starts at:** BUILD.md §6, week 6, item **28** — artboard 08
+states 1, 2, 4, 5, 6, skipping 3 (overload, v0.2). Built as **real renders, not
+mocks**: first run at 0 rows, one record at n = 1, the unresolved-name queue,
+the broken streak, and no results. `nearest_name` has been waiting since
+session 22 for state 6.
+
 ---
 
 ## Open questions

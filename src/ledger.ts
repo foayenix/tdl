@@ -140,6 +140,45 @@ export async function record(id: number): Promise<Record> {
   return invoke<Record>("ledger_record", { id });
 }
 
+export type BoundReference = {
+  position: number;
+  reference_id: number;
+  title: string;
+  authors: string | null;
+  journal: string | null;
+  year: number | null;
+  doi: string | null;
+  read_state: string;
+  added_at: string;
+  sections: string[];
+};
+
+export async function recordReferences(id: number): Promise<BoundReference[]> {
+  return invoke<BoundReference[]>("ledger_record_references", { id });
+}
+
+export type CitingOutput = {
+  id: number;
+  kind: string;
+  title: string;
+  venue: string | null;
+  date: string;
+};
+
+export async function citedByOutputs(id: number): Promise<CitingOutput[]> {
+  return invoke<CitingOutput[]>("ledger_cited_by_outputs", { id });
+}
+
+export type QueuedReading = { count: number; oldest: string | null };
+
+export async function queuedReading(id: number): Promise<QueuedReading> {
+  return invoke<QueuedReading>("ledger_queued_reading", { id });
+}
+
+export async function unsourcedBySection(id: number): Promise<[string, number][]> {
+  return invoke<[string, number][]>("ledger_unsourced_by_section", { id });
+}
+
 export type BenefitSharing = {
   narrative: string | null;
   agreement_ref: string | null;

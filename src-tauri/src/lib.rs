@@ -408,6 +408,140 @@ pub fn record(path: &Path, id: i64) -> Result<Record> {
         })
 }
 
+/// A reference bound to this record, numbered **within the record**.
+///
+/// Artboard 05 labels them `R1`–`Rn` and the summary cites `sources R1, R2,
+/// R6`, so the number is a position in this record's list, not the library's
+/// row id. A record's sixth reference is R6 whether the library holds twelve
+/// or twelve hundred.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BoundReference {
+    pub position: i64,
+    pub reference_id: i64,
+    pub title: String,
+    pub authors: Option<String>,
+    pub journal: Option<String>,
+    pub year: Option<i64>,
+    pub doi: Option<String>,
+    pub read_state: String,
+    pub added_at: String,
+    /// Which sections of the record cite it.
+    pub sections: Vec<String>,
+}
+
+pub fn record_references(path: &Path, monograph_id: i64) -> Result<Vec<BoundReference>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT r.id, r.title, r.authors, r.journal, r.year, r.doi, r.read_state, r.added_at,
+                group_concat(mr.section, char(31))
+         FROM reference r
+         JOIN monograph_reference mr ON mr.reference_id = r.id
+         WHERE mr.monograph_id = ?1
+         GROUP BY r.id
+         ORDER BY min(mr.bound_at), r.id",
+    )?;
+
+    let rows = statement.query_map([monograph_id], |row| {
+        let sections: Option<String> = row.get(8)?;
+        Ok(BoundReference {
+            position: 0,
+            reference_id: row.get(0)?,
+            title: row.get(1)?,
+            authors: row.get(2)?,
+            journal: row.get(3)?,
+            year: row.get(4)?,
+            doi: row.get(5)?,
+            read_state: row.get(6)?,
+            added_at: row.get(7)?,
+            sections: split_list(sections),
+        })
+    })?;
+
+    let mut bound: Vec<BoundReference> = rows.collect::<std::result::Result<_, _>>()?;
+    for (index, reference) in bound.iter_mut().enumerate() {
+        reference.position = index as i64 + 1;
+    }
+
+    Ok(bound)
+}
+
+/// `cited by your outputs` — what this plant has appeared in.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CitingOutput {
+    pub id: i64,
+    pub kind: String,
+    pub title: String,
+    pub venue: Option<String>,
+    pub date: String,
+}
+
+pub fn cited_by_outputs(path: &Path, monograph_id: i64) -> Result<Vec<CitingOutput>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT o.id, o.kind, o.title, o.venue, o.date
+         FROM output o
+         JOIN output_monograph om ON om.output_id = o.id
+         WHERE om.monograph_id = ?1
+         ORDER BY o.date DESC, o.id DESC",
+    )?;
+
+    let rows = statement.query_map([monograph_id], |row| {
+        Ok(CitingOutput {
+            id: row.get(0)?,
+            kind: row.get(1)?,
+            title: row.get(2)?,
+            venue: row.get(3)?,
+            date: row.get(4)?,
+        })
+    })?;
+
+    Ok(rows.collect::<std::result::Result<_, _>>()?)
+}
+
+/// `3 references queued, unread →` and `oldest queued 2026-07-02`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct QueuedReading {
+    pub count: i64,
+    pub oldest: Option<String>,
+}
+
+pub fn queued_reading(path: &Path, monograph_id: i64) -> Result<QueuedReading> {
+    let connection = open_checked(path)?;
+
+    connection
+        .query_row(
+            // DISTINCT: a reference cited in two sections is bound twice and
+            // would otherwise be counted twice.
+            "SELECT count(DISTINCT r.id), min(date(r.added_at))
+             FROM reference r
+             JOIN monograph_reference mr ON mr.reference_id = r.id
+             WHERE mr.monograph_id = ?1 AND r.read_state = 'queued'",
+            [monograph_id],
+            |row| {
+                Ok(QueuedReading {
+                    count: row.get(0)?,
+                    oldest: row.get(1)?,
+                })
+            },
+        )
+        .map_err(Error::Sqlite)
+}
+
+/// Per-section unsourced counts — the rail shows them in `secondary`.
+pub fn unsourced_by_section(path: &Path, monograph_id: i64) -> Result<Vec<(String, i64)>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT claim_table, count(*) FROM unsourced_claim
+         WHERE monograph_id = ?1 GROUP BY claim_table",
+    )?;
+
+    let rows = statement.query_map([monograph_id], |row| Ok((row.get(0)?, row.get(1)?)))?;
+    Ok(rows.collect::<std::result::Result<_, _>>()?)
+}
+
 /// The benefit-sharing record. One row per monograph, and not optional chrome:
 /// it records consent, named attribution and the agreement under which
 /// vernacular and preparation knowledge was collected (DESIGN.md §8).

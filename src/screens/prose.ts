@@ -11,7 +11,7 @@ export type ProseSpec = {
   field: "summary" | "preparation";
   title: string;
   text: string | null;
-  /** `sources R1, R2, R6` — the references cited in this section. */
+  /** `sources R1, R2, R6` — positions in this record, not library ids. */
   sources: number[];
   /** `rewritten 2026-08-24`, on the summary only. */
   rewritten?: string | null;

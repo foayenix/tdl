@@ -29,10 +29,20 @@ export type SectionSpec = {
   choices?: Record<number, readonly string[]>;
 };
 
-/** `R7`, free text, or the warning. Never blank (DESIGN.md §6). */
-function source(claim: Claim): HTMLElement {
+/**
+ * `R2`, free text, or the warning. Never blank (DESIGN.md §6).
+ *
+ * The number is the reference's position **in this record**, not its library
+ * id — `numbers` maps one to the other. A reference cited but not bound has no
+ * position, and shows its note or the warning rather than a number that would
+ * not match the references section below.
+ */
+function source(claim: Claim, numbers: ReadonlyMap<number, number>): HTMLElement {
   if (claim.source_reference_id !== null) {
-    return el("span", { class: "source-ref" }, `R${claim.source_reference_id}`);
+    const position = numbers.get(claim.source_reference_id);
+    if (position !== undefined) {
+      return el("span", { class: "source-ref" }, `R${position}`);
+    }
   }
   return sourceCell(claim.source_note);
 }
@@ -143,6 +153,7 @@ export function renderSection(
   spec: SectionSpec,
   monographId: number,
   rows: Claim[],
+  numbers: ReadonlyMap<number, number>,
   adding: boolean,
   onToggleAdd: () => void,
   reload: () => void,
@@ -151,7 +162,7 @@ export function renderSection(
   const body = rows.map((claim) => ({
     cells: spec.columns.map((column, index): Cell => {
       if (column.marker) return null;
-      if (column.label === "source") return source(claim);
+      if (column.label === "source") return source(claim, numbers);
       // The marker column shifts the claim columns by one.
       const claimIndex = index - 1;
       return spec.cell?.(claim, claimIndex) ?? claim.cells[claimIndex] ?? "";
@@ -167,7 +178,7 @@ export function renderSection(
 
   return el(
     "section",
-    { class: "section" },
+    { class: "section", id: `section-${spec.table}` },
     heading(spec, rows, onToggleAdd),
     table,
   );

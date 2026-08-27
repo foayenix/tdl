@@ -275,7 +275,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 24 · **Artboard 05** — vernacular + indication sections, inline add
 - [x] 25 · **Artboard 05** — constituent + safety sections, severity chips
 - [x] 26 · **Artboard 05** — prose sections: summary, preparation, benefit-sharing
-- [ ] 27 · **Artboard 05** — references section, sticky rail, the reviewed-status block
+- [x] 27 · **Artboard 05** — references section, sticky rail, the reviewed-status block
 
 **Week 6 — states, wall, ship**
 

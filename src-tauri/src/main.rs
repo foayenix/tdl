@@ -8,11 +8,12 @@ use std::time::{Duration, Instant};
 use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_claim, add_output, benefit_sharing, claims, corpus, day_log, default_path, nav_counts,
-    nearest_name, note_for_today, open_monograph, parse_fetch, record, save_benefit_sharing,
-    save_note, save_prose, search, section_sources, set_floor_day, status, today_stats,
-    BenefitSharing, Claim, Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult,
-    Status, TodayStats,
+    add_claim, add_output, benefit_sharing, cited_by_outputs, claims, corpus, day_log,
+    default_path, nav_counts, nearest_name, note_for_today, open_monograph, parse_fetch,
+    queued_reading, record, record_references, save_benefit_sharing, save_note, save_prose, search,
+    section_sources, set_floor_day, status, today_stats, unsourced_by_section, BenefitSharing,
+    BoundReference, CitingOutput, Claim, Corpus, DayLog, FetchResult, NavCounts, QueuedReading,
+    Record, SavedNote, SearchResult, Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -114,6 +115,26 @@ fn ledger_corpus() -> std::result::Result<Corpus, String> {
 }
 
 #[tauri::command]
+fn ledger_record_references(id: i64) -> std::result::Result<Vec<BoundReference>, String> {
+    record_references(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_cited_by_outputs(id: i64) -> std::result::Result<Vec<CitingOutput>, String> {
+    cited_by_outputs(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_queued_reading(id: i64) -> std::result::Result<QueuedReading, String> {
+    queued_reading(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_unsourced_by_section(id: i64) -> std::result::Result<Vec<(String, i64)>, String> {
+    unsourced_by_section(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_benefit_sharing(id: i64) -> std::result::Result<BenefitSharing, String> {
     benefit_sharing(&ledger_path(), id).map_err(|error| error.to_string())
 }
@@ -212,7 +233,11 @@ fn main() {
             ledger_benefit_sharing,
             ledger_save_benefit_sharing,
             ledger_save_prose,
-            ledger_section_sources
+            ledger_section_sources,
+            ledger_record_references,
+            ledger_cited_by_outputs,
+            ledger_queued_reading,
+            ledger_unsourced_by_section
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");
