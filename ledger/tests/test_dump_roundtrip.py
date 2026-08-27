@@ -123,6 +123,35 @@ def populate(conn) -> None:
         ),
     )
 
+    output_id = conn.execute("SELECT id FROM output").fetchone()["id"]
+    conn.execute(
+        "INSERT INTO monograph_reference (monograph_id, reference_id, section)"
+        " VALUES (?, ?, ?)",
+        (monograph_id, reference_id, "indication"),
+    )
+    conn.execute(
+        "INSERT INTO output_monograph (output_id, monograph_id) VALUES (?, ?)",
+        (output_id, monograph_id),
+    )
+    conn.execute(
+        "INSERT INTO reference_tag (reference_id, tag) VALUES (?, ?)",
+        (reference_id, "antimalarial"),
+    )
+    conn.execute(
+        "INSERT INTO inbox_line (captured_at, raw, kind, body) VALUES (?, ?, ?, ?)",
+        (
+            "2026-08-24T07:42",
+            "mono Warburgia ugandensis bark — check the Kenyan trade figures",
+            "mono",
+            "Warburgia ugandensis bark — check the Kenyan trade figures",
+        ),
+    )
+    # An unclassified line stays pending, kind NULL, for the review overlay.
+    conn.execute(
+        "INSERT INTO inbox_line (captured_at, raw) VALUES (?, ?)",
+        ("2026-08-24T18:57", "bissilon?"),
+    )
+
 
 def test_dump_restores_into_an_identical_database(tmp_path):
     original_path = tmp_path / "ledger.sqlite"
@@ -181,6 +210,7 @@ def test_the_dump_is_text_and_carries_every_table(tmp_path):
     for table in (
         "entry", "monograph", "reference", "output",
         "vernacular", "indication", "constituent", "safety", "benefit_sharing",
+        "monograph_reference", "output_monograph", "reference_tag", "inbox_line",
     ):
         assert f"CREATE TABLE {table}" in dump
     assert "Khaya senegalensis" in dump

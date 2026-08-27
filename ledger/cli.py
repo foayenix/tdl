@@ -12,9 +12,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
+from .commands import link as link_command
 from .commands import log as log_command
 from .commands import migrate as migrate_command
 from .commands import mono as mono_command
+from .commands import seed as seed_command
 from .commands import win as win_command
 from .db import DEFAULT_DB_PATH
 
@@ -40,12 +42,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command", metavar="command")
 
-    # Registered as sessions land them: link/seed (07), ref (08),
-    # find (10), inbox.
+    # Registered as sessions land them: ref (08), find (10), inbox.
     migrate_command.register(subparsers)
     log_command.register(subparsers)
     mono_command.register(subparsers)
     win_command.register(subparsers)
+    link_command.register(subparsers)
+    seed_command.register(subparsers)
 
     return parser
 

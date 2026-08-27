@@ -246,7 +246,7 @@ Thirty sessions. Tick each box as it lands.
 **Week 2 — the corpus in the database**
 
 - [x] 06 · `001_claims.sql` + the sourcing trigger + its test
-- [ ] 07 · `002_links.sql` + `ledger link` + `ledger seed`
+- [x] 07 · `002_links.sql` + `ledger link` + `ledger seed`
 - [ ] 08 · `ledger ref` + Crossref, `--json`, DOI normalisation, offline failure path
 - [ ] 09 · GBIF resolver, confidence threshold, review queue
 - [ ] 10 · `003_fts.sql` — FTS5 + triggers + `ledger find`

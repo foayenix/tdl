@@ -292,6 +292,50 @@ a decision.
 (`monograph_reference` with `section`, `output_monograph`, `reference_tag`,
 `inbox_line`) plus `ledger link` and `ledger seed`.
 
+### session 07 — the graph has edges: `ledger link` and `ledger seed`
+
+**Landed**
+
+- `schema/002_links.sql` → `user_version = 3`. `monograph_reference` (with
+  `section`), `output_monograph`, `reference_tag`, `inbox_line`.
+- `ledger/links.py` — `bind_reference()`, `bind_output()`, `tag()`, and **both
+  gap queries from §4 verbatim**: `never_published_on()` and
+  `cited_by_nothing()`.
+- `ledger link ref DOI|ID NAME [--section]` · `ledger link output ID NAME` ·
+  `ledger link tag DOI|ID TAG`. Binding twice is reported, not an error.
+- `ledger/seed.py` + `ledger seed --from FILE [--dry-run]`. Reads `name` plus
+  four optional columns, accepts the header names the `$EDITOR` template writes
+  so a seed file round-trips, ignores columns it does not know, and never
+  touches a plant already in the corpus.
+- **§7 test 8, gap queries** — a record with an output does not appear, one
+  without does; a reference bound to nothing appears in `cited by nothing`.
+
+`just check` passes: ruff clean, 133 tests green.
+
+**The round-trip test caught its own gap**
+
+The assertion added in session 06 — "a table was left empty; the round trip
+does not prove anything about it" — failed the moment 002 landed four new
+tables. That is the assertion working. The fixture now writes into all
+thirteen tables, including an unclassified `inbox_line` with `kind` NULL.
+
+**Decisions**
+
+- **`ledger seed` is not the general importer §5 forbids.** Five known columns
+  and a `name` requirement. Anything else stays a throwaway script.
+- `section` on `monograph_reference` is nullable — bound but not yet placed is
+  a real state — and CHECKed against the record's seven sections when set. The
+  unique key includes `section`, so one reference can be cited in two sections
+  of the same record, which artboard 05 shows.
+- `inbox_line` is `UNIQUE (captured_at, raw)`, so re-running `ledger inbox`
+  over the same file cannot double-route a line.
+
+**Next session starts at:** BUILD.md §6, week 2, item **08** — `ledger ref` +
+Crossref, `--json`, DOI normalisation, offline failure path. §7 test 6 wants a
+recorded fixture for the parsing test and exactly one live test marked
+`@pytest.mark.network`, which `pyproject.toml` already excludes from
+`just check`.
+
 ---
 
 ## Open questions
