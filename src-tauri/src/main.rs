@@ -12,9 +12,10 @@ use ledger_app::{
     day_log, default_path, nav_counts, nearest_name, next_skeleton, note_for_today, open_monograph,
     parse_fetch, parse_resolution, queue_position, queued_reading, record, record_references,
     save_benefit_sharing, save_note, save_prose, search, section_sources, set_floor_day,
-    set_name_by_hand, status, today_stats, unsourced_by_section, BenefitSharing, BoundReference,
-    BrokenStreak, CitingOutput, Claim, Corpus, DayLog, FetchResult, NavCounts, QueuePosition,
-    QueuedReading, Record, Resolution, SavedNote, SearchResult, Status, TodayStats,
+    set_name_by_hand, status, today_stats, unsourced_by_section, wall, BenefitSharing,
+    BoundReference, BrokenStreak, CitingOutput, Claim, Corpus, DayLog, FetchResult, NavCounts,
+    QueuePosition, QueuedReading, Record, Resolution, SavedNote, SearchResult, Status, TodayStats,
+    Wall,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -173,6 +174,11 @@ fn ledger_day_log() -> std::result::Result<DayLog, String> {
 }
 
 #[tauri::command]
+fn ledger_wall() -> std::result::Result<Wall, String> {
+    wall(&ledger_path()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_corpus() -> std::result::Result<Corpus, String> {
     corpus(&ledger_path()).map_err(|error| error.to_string())
 }
@@ -320,7 +326,8 @@ fn main() {
             ledger_queue_position,
             ledger_next_skeleton,
             ledger_resolve_name,
-            ledger_set_name_by_hand
+            ledger_set_name_by_hand,
+            ledger_wall
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

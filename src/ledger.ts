@@ -140,6 +140,28 @@ export async function record(id: number): Promise<Record> {
   return invoke<Record>("ledger_record", { id });
 }
 
+export type WallOutput = {
+  id: number;
+  kind: string;
+  title: string;
+  venue: string | null;
+  date: string;
+  url: string | null;
+  plants: string[];
+};
+
+export type Wall = {
+  outputs: WallOutput[];
+  total: number;
+  earliest: string | null;
+  latest: string | null;
+  by_kind: [string, number][];
+};
+
+export async function wall(): Promise<Wall> {
+  return invoke<Wall>("ledger_wall");
+}
+
 export type BrokenStreak = {
   ended_on: string;
   length: number;

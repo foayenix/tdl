@@ -1495,6 +1495,40 @@ top, grouped by year newest-first. Outputs with no plant read `whole corpus` or
 `method, no plant` — upright and muted, never italic. **No pagination, no
 load-more: the length of the scroll is the point.**
 
+### session 29 — The Wall
+
+**Landed**
+
+- Rust: `wall()` — every output newest first with the plants it was about, the
+  span, and the counts by kind including the zeroes.
+- `src/screens/wall.ts`.
+
+`just check` passes: 282 pytest, 62 cargo, tsc clean. Verified in the window:
+`The Wall · 4 outputs · 2024-11-19 → 2026-08-27 · newest first`, kind counts
+across the top each in its own colour, grouped by year newest-first.
+
+**No pagination, no load-more.** The length of the scroll is the point, and
+there is no code here that could grow into either.
+
+**A plantless output reads `whole corpus`, upright and muted.** Never italic —
+it is not a name, and the rule that botanical names are italic only means
+anything if things that are not names are not.
+
+**One thing the schema cannot answer**
+
+Artboard 04 gives two phrasings for an output about no particular plant:
+`whole corpus` **and** `method, no plant`. Schema v4 has no column that
+distinguishes them — an output either has `output_monograph` rows or it does
+not. `whole corpus` is used for both, as the more general of the author's own
+two phrases. Open question below.
+
+**Next session starts at:** BUILD.md §6, week 6, item **30** — the ship: the
+PyInstaller freeze, `cargo tauri build`, launching from `/Applications` on a
+machine with no Python, `README.md`, tag `v0.1`. **Two of those cannot be done
+here** — this is Linux, and there is no Mac to launch from `/Applications` on.
+Expect to land the freeze scripting and the README, and to hand you a
+documented list of what must be run on the Mac.
+
 ---
 
 ## Open questions
@@ -1566,6 +1600,11 @@ answer them alone.
   nothing pending for it to save. It is rendered disabled with that reason.
   Deferred save is a defensible alternative; it changes how the whole record
   behaves, so it is yours to choose.
+
+- **New (29):** artboard 04 gives two phrasings for an output about no
+  particular plant — `whole corpus` and `method, no plant` — but schema v4
+  cannot tell them apart. `whole corpus` is used for both. Needs a column or a
+  single phrase.
 
 ---
 

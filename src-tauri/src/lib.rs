@@ -408,6 +408,77 @@ pub fn record(path: &Path, id: i64) -> Result<Record> {
         })
 }
 
+/// One card on The Wall (artboard 04).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct WallOutput {
+    pub id: i64,
+    pub kind: String,
+    pub title: String,
+    pub venue: Option<String>,
+    pub date: String,
+    pub url: Option<String>,
+    /// The plants it was about. Empty is a real answer, not a missing one.
+    pub plants: Vec<String>,
+}
+
+/// The trophy cabinet. No pagination, no load-more — the length of the scroll
+/// is the point (DESIGN.md §8).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct Wall {
+    /// Newest first.
+    pub outputs: Vec<WallOutput>,
+    pub total: i64,
+    pub earliest: Option<String>,
+    pub latest: Option<String>,
+    /// Counts across the top, in ramp order, zeroes included.
+    pub by_kind: Vec<(String, i64)>,
+}
+
+pub const OUTPUT_KINDS: [&str; 5] = ["paper", "talk", "long-form", "release", "note"];
+
+pub fn wall(path: &Path) -> Result<Wall> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT o.id, o.kind, o.title, o.venue, o.date, o.url,
+                (SELECT group_concat(m.accepted_name, char(31))
+                   FROM output_monograph om
+                   JOIN monograph m ON m.id = om.monograph_id
+                  WHERE om.output_id = o.id)
+         FROM output o
+         ORDER BY o.date DESC, o.id DESC",
+    )?;
+
+    let rows = statement.query_map([], |row| {
+        let plants: Option<String> = row.get(6)?;
+        Ok(WallOutput {
+            id: row.get(0)?,
+            kind: row.get(1)?,
+            title: row.get(2)?,
+            venue: row.get(3)?,
+            date: row.get(4)?,
+            url: row.get(5)?,
+            plants: split_list(plants),
+        })
+    })?;
+
+    let outputs: Vec<WallOutput> = rows.collect::<std::result::Result<_, _>>()?;
+
+    let mut by_kind = Vec::with_capacity(OUTPUT_KINDS.len());
+    for kind in OUTPUT_KINDS {
+        let count = outputs.iter().filter(|output| output.kind == kind).count() as i64;
+        by_kind.push((kind.to_string(), count));
+    }
+
+    Ok(Wall {
+        total: outputs.len() as i64,
+        earliest: outputs.last().map(|output| output.date.clone()),
+        latest: outputs.first().map(|output| output.date.clone()),
+        by_kind,
+        outputs,
+    })
+}
+
 /// One GBIF candidate, as artboard 08 state 4 lists them.
 #[derive(Debug, Clone, Serialize, PartialEq, Default)]
 pub struct Candidate {

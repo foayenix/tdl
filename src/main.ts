@@ -14,6 +14,7 @@ import {
   setNameByHand,
   status,
   todayStats,
+  wall,
 } from "./ledger";
 import type { BrokenStreak, Corpus, DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
 import { readHash } from "./hash";
@@ -21,6 +22,7 @@ import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
 import { renderCorpus } from "./screens/corpus";
 import { renderRecord } from "./screens/record";
+import { renderWall } from "./screens/wall";
 import { renderToday } from "./screens/today";
 
 /** The last GBIF answer, so its candidate list survives a redraw. */
@@ -200,6 +202,8 @@ async function render(): Promise<void> {
     } else {
       append(screen, el("div", { class: "trouble" }, "no monograph named in the address"));
     }
+  } else if (route === "wall") {
+    renderWall(screen, await wall());
   } else if (route === "system") renderSystem(screen);
   else if (error) append(screen, el("div", { class: "trouble" }, error));
 }

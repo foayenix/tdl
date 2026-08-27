@@ -1442,3 +1442,107 @@
 .state__candidate:last-child {
   border-bottom: 0;
 }
+
+/* ── artboard 04 · the wall ─────────────────────────────────────────── */
+
+.wall__kinds {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-16);
+}
+
+.wall__kind {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+}
+
+.wall__kind-count {
+  font-family: var(--font-mono);
+  font-size: var(--size-numeric);
+  color: var(--ink);
+}
+
+.wall__year {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.wall__year-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.wall__year-label {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--track-label);
+  color: var(--ink);
+}
+
+.wall__year-count {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+}
+
+.wall__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-12);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-14);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.card__date {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+}
+
+.card__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--size-section-head);
+  font-weight: 600;
+  line-height: var(--leading-section-head);
+  letter-spacing: var(--track-section-head);
+  color: var(--ink);
+}
+
+.card__venue {
+  font-family: var(--font-sans);
+  font-size: var(--size-emphasis);
+  color: var(--muted);
+}
+
+.card__plants {
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell-sm);
+  color: var(--ink);
+}
+
+/* An output about no particular plant. Upright and muted — it is not a name. */
+.card__no-plant {
+  font-style: normal;
+  color: var(--muted);
+}
