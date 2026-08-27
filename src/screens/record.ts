@@ -4,9 +4,11 @@
 // product" (BUILD.md §1). This screen does not move.
 
 import { append, clear, el } from "../dom";
-import { statusChip } from "../chips";
-import { EVIDENCE_LABEL, evidenceCode, type Evidence } from "../evidence";
-import type { Record } from "../ledger";
+import { evidenceChip, statusChip } from "../chips";
+import { EVIDENCE, EVIDENCE_LABEL, evidenceCode, type Evidence } from "../evidence";
+import { claims, type Claim, type Record } from "../ledger";
+import { renderSection, type SectionSpec } from "./section";
+import { COLUMNS } from "../table";
 
 /** `wfo-id wfo-0000651773` — label muted, value ink. Blank when unknown. */
 function identity(label: string, value: string | null, extraClass?: string): HTMLElement {
@@ -150,13 +152,96 @@ function summaryStrip(monograph: Record, onSave: () => void): HTMLElement {
   return strip;
 }
 
-export function renderRecord(host: HTMLElement, monograph: Record, onSave: () => void): void {
+/** The sections of artboard 05 that exist. 25–27 add the rest. */
+const SECTIONS: SectionSpec[] = [
+  {
+    table: "vernacular",
+    title: "vernacular names",
+    addLabel: "+ add name",
+    columns: COLUMNS.vernacular,
+    placeholders: ["name", "language", "region"],
+    meta: (rows) => {
+      const languages = new Set(
+        rows.map((row) => row.cells[1]).filter((value): value is string => Boolean(value)),
+      );
+      return languages.size
+        ? `${languages.size} ${languages.size === 1 ? "language" : "languages"}`
+        : null;
+    },
+  },
+  {
+    table: "indication",
+    title: "indications",
+    addLabel: "+ add indication",
+    columns: COLUMNS.indications,
+    placeholders: ["condition", "tradition", "region", "evidence"],
+    // `evidence` is one of six named values; a blank is not one of them.
+    choices: { 3: EVIDENCE },
+    // A claim is who used it for what, where — the evidence chip carries the
+    // level, and the code beside it keeps the exact one recoverable.
+    cell: (claim, index) =>
+      index === 3 && claim.cells[3]
+        ? evidenceChip(claim.cells[3] as Evidence, "sm")
+        : (claim.cells[index] ?? ""),
+    meta: (rows) => {
+      const levels = rows
+        .map((row) => row.cells[3])
+        .filter((value): value is string => Boolean(value));
+      if (!levels.length) return null;
+      const codes = levels.map((level) => evidenceCode(level as Evidence)).sort();
+      const lowest = codes[0] ?? "";
+      const highest = codes[codes.length - 1] ?? "";
+      return lowest === highest ? lowest : `${lowest} → ${highest}`;
+    },
+  },
+];
+
+/** Which section, if any, has its inline add row open. */
+let addingIn: string | null = null;
+
+export async function renderRecord(
+  host: HTMLElement,
+  monograph: Record,
+  onSave: () => void,
+  reload: () => void,
+): Promise<void> {
   clear(host);
 
-  append(
-    host,
-    header(monograph, onSave),
-    // The sections and the sticky rail arrive in sessions 24–27.
-    el("div", { class: "record__body" }),
-  );
+  const trouble = el("div", { class: "trouble" });
+  const say = (message: string) => {
+    trouble.textContent = message;
+  };
+
+  const body = el("div", { class: "record__body" });
+  const column = el("div", { class: "record__column" });
+  append(body, column);
+
+  append(host, header(monograph, onSave), trouble, body);
+
+  for (const spec of SECTIONS) {
+    let rows: Claim[] = [];
+    try {
+      rows = await claims(monograph.id, spec.table);
+    } catch (error) {
+      say(String(error));
+    }
+
+    column.appendChild(
+      renderSection(
+        spec,
+        monograph.id,
+        rows,
+        addingIn === spec.table,
+        () => {
+          addingIn = addingIn === spec.table ? null : spec.table;
+          reload();
+        },
+        () => {
+          addingIn = null;
+          reload();
+        },
+        say,
+      ),
+    );
+  }
 }

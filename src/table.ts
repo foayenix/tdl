@@ -165,6 +165,16 @@ export const COLUMNS = {
     { width: 27.5, label: "source" },
   ] as Column[],
 
+  // vernacular — artboard 05 gives this one in pixels rather than in
+  // DESIGN.md §7's table; converted to percentages of the record column.
+  vernacular: [
+    markerColumn(0.5),
+    { width: 21.5, label: "name" },
+    { width: 13.5, label: "language" },
+    { width: 39.5, label: "region" },
+    { width: 25.0, label: "source" },
+  ] as Column[],
+
   // library — 752px inner
   library: [
     markerColumn(0.4),

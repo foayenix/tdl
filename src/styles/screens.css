@@ -919,3 +919,109 @@
   gap: var(--space-20);
   padding: 0 var(--space-28) 24px;
 }
+
+/* ── artboard 05 · record sections ──────────────────────────────────── */
+
+.record__column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+}
+
+/* The section title is `ink`, not muted — it is a heading, not a field label. */
+.section__title {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  line-height: 1;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.section__count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* The unsourced count follows into the section header (DESIGN.md §6). */
+.section__unsourced {
+  color: var(--secondary);
+}
+
+.section__add {
+  margin-left: auto;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--primary-ring);
+  border-radius: var(--radius-control);
+  padding: var(--space-4) 10px;
+  cursor: pointer;
+}
+
+.section__add:hover {
+  background: var(--primary-wash);
+}
+
+.section__add:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.section__add-row {
+  display: grid;
+  align-items: center;
+  gap: 0;
+  padding: var(--space-6) var(--space-14);
+  border-top: 1px solid var(--hairline);
+  background: var(--row-focus);
+}
+
+.section__field-cell {
+  min-width: 0;
+  padding-right: var(--space-12);
+}
+
+.section__field {
+  width: 100%;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell-sm);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  padding: var(--space-4) var(--space-7);
+}
+
+.section__field::placeholder {
+  color: var(--disabled-ink);
+}
+
+.section__field:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+  border-color: var(--primary-ring);
+}
+
+.source-ref {
+  color: var(--primary);
+}

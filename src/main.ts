@@ -104,7 +104,9 @@ async function render(): Promise<void> {
     const id = Number(readHash().params.get("id"));
     if (Number.isFinite(id) && id > 0) {
       record(id)
-        .then((monograph) => renderRecord(screen, monograph, () => void render()))
+        .then((monograph) =>
+          renderRecord(screen, monograph, () => void render(), () => void render()),
+        )
         .catch((problem) => append(screen, el("div", { class: "trouble" }, String(problem))));
     } else {
       append(screen, el("div", { class: "trouble" }, "no monograph named in the address"));

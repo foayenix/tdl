@@ -408,6 +408,162 @@ pub fn record(path: &Path, id: i64) -> Result<Record> {
         })
 }
 
+/// A claim row as the record shows it. Every one carries a source, and a row
+/// without one is the rule the whole screen is built around (DESIGN.md §6).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct Claim {
+    pub id: i64,
+    /// The claim's own columns, in the order the record shows them.
+    pub cells: Vec<Option<String>>,
+    pub source_reference_id: Option<i64>,
+    pub source_note: Option<String>,
+}
+
+impl Claim {
+    /// True when this row reads `⚠ source needed`.
+    pub fn is_unsourced(&self) -> bool {
+        self.source_reference_id.is_none()
+            && self
+                .source_note
+                .as_deref()
+                .map(str::trim)
+                .unwrap_or("")
+                .is_empty()
+    }
+}
+
+/// The columns each claim table contributes, in record order. This is the one
+/// place that mapping lives; `ledger.claims.CLAIM_TABLES` is its twin.
+pub fn claim_columns(table: &str) -> Option<&'static [&'static str]> {
+    match table {
+        "vernacular" => Some(&["name", "language", "region"]),
+        "indication" => Some(&["condition", "tradition", "region", "evidence"]),
+        "constituent" => Some(&["compound", "class", "inchikey"]),
+        "safety" => Some(&["kind", "finding", "severity"]),
+        _ => None,
+    }
+}
+
+pub fn claims(path: &Path, monograph_id: i64, table: &str) -> Result<Vec<Claim>> {
+    let Some(columns) = claim_columns(table) else {
+        return Err(Error::Refused(format!("{table} is not a claim table")));
+    };
+
+    let connection = open_checked(path)?;
+
+    let selected = columns
+        .iter()
+        .map(|column| format!("\"{column}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let sql = format!(
+        "SELECT id, {selected}, source_reference_id, source_note
+         FROM \"{table}\" WHERE monograph_id = ?1 ORDER BY id"
+    );
+
+    let mut statement = connection.prepare(&sql)?;
+    let rows = statement.query_map([monograph_id], |row| {
+        let mut cells = Vec::with_capacity(columns.len());
+        for index in 0..columns.len() {
+            cells.push(row.get::<_, Option<String>>(index + 1)?);
+        }
+        Ok(Claim {
+            id: row.get(0)?,
+            source_reference_id: row.get(columns.len() + 1)?,
+            source_note: row.get(columns.len() + 2)?,
+            cells,
+        })
+    })?;
+
+    Ok(rows.collect::<std::result::Result<_, _>>()?)
+}
+
+/// Add one claim row from the record's inline `+ add`.
+///
+/// `values` is positional, matching `claim_columns`. A blank source is allowed
+/// and is exactly what makes the row render as unsourced — the database, not
+/// this function, is what stops such a record reaching `reviewed`.
+pub fn add_claim(
+    path: &Path,
+    monograph_id: i64,
+    table: &str,
+    values: Vec<String>,
+    source_note: Option<String>,
+) -> Result<i64> {
+    let Some(columns) = claim_columns(table) else {
+        return Err(Error::Refused(format!("{table} is not a claim table")));
+    };
+
+    if values.len() != columns.len() {
+        return Err(Error::Refused(format!(
+            "{table} takes {} values, got {}",
+            columns.len(),
+            values.len()
+        )));
+    }
+
+    // The first column is the claim itself; a row without it says nothing.
+    if values[0].trim().is_empty() {
+        return Err(Error::Refused(format!(
+            "a {table} row needs a {}",
+            columns[0]
+        )));
+    }
+
+    let connection = open_checked(path)?;
+
+    let names = columns
+        .iter()
+        .map(|column| format!("\"{column}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let placeholders = (0..columns.len())
+        .map(|index| format!("?{}", index + 2))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let sql = format!(
+        "INSERT INTO \"{table}\" (monograph_id, {names}, source_note)
+         VALUES (?1, {placeholders}, ?{})",
+        columns.len() + 2
+    );
+
+    let mut parameters: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(monograph_id)];
+    for (index, value) in values.iter().enumerate() {
+        let trimmed = value.trim();
+        // An optional column left blank is NULL, not an empty string — the
+        // difference matters to `coalesce` and to the unsourced view.
+        if trimmed.is_empty() && index > 0 {
+            parameters.push(Box::new(None::<String>));
+        } else {
+            parameters.push(Box::new(trimmed.to_string()));
+        }
+    }
+    let note = source_note
+        .map(|note| note.trim().to_string())
+        .filter(|note| !note.is_empty());
+    parameters.push(Box::new(note));
+
+    let borrowed: Vec<&dyn rusqlite::ToSql> =
+        parameters.iter().map(|value| value.as_ref()).collect();
+
+    connection
+        .execute(&sql, borrowed.as_slice())
+        .map_err(|error| match error {
+            rusqlite::Error::SqliteFailure(_, Some(ref message))
+                if message.contains("unsourced row") =>
+            {
+                Error::Refused(
+                    "a reviewed monograph cannot take an unsourced row — source it first".into(),
+                )
+            }
+            other => Error::Sqlite(other),
+        })?;
+
+    Ok(connection.last_insert_rowid())
+}
+
 /// What a `find` searched and what it found.
 // f64 has no Eq — the elapsed time is a measurement, not an identity.
 #[derive(Debug, Clone, Serialize, PartialEq, Default)]

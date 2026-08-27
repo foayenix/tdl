@@ -1259,6 +1259,53 @@ quiet button, and per-row sourcing; the indications table already has its
 column widths in `COLUMNS.indications` and its unsourced row proven in session
 16.
 
+### session 24 — the vernacular and indication sections, with inline add
+
+**Landed**
+
+- Rust: `claims()`, `add_claim()`, `claim_columns()` — the column mapping that
+  is the twin of `ledger.claims.CLAIM_TABLES`, with a test asserting the two
+  agree.
+- `src/screens/section.ts` — one section component: heading with a count and
+  its unsourced part, `+ add`, the table, and the inline add row. Every claim
+  section on artboard 05 has this shape, so it is built once.
+- `COLUMNS.vernacular` — artboard 05 gives this table in pixels rather than in
+  DESIGN.md §7, converted to percentages of the record column.
+- 9 Rust tests (56 in total).
+
+`just check` passes: 282 pytest, 56 cargo, tsc clean.
+
+**§6 propagates the whole way, and the screenshots show it**
+
+`1 unsourced` appears in the section heading in `secondary`, the row is tinted
+with its 4 × 16 mark, the source cell reads `⚠ source needed`, and the record
+header reads `2 rows unsourced`. One rule, four places, one definition —
+everything reads the `unsourced_claim` view.
+
+**Two real bugs, both found by driving the window**
+
+1. **The inline add offered a blank evidence level.** A Rust test caught it
+   first: `evidence` is one of six named values and the CHECK refuses an empty
+   string, so the add row would have failed on submit. Enum columns now get a
+   **chooser** rather than a field — the record cannot offer to write something
+   the database will refuse.
+2. **`focus()` was called on a detached element.** `addRow` focused its first
+   field while the row was still being built, before it was in the document, so
+   it did nothing: typing went to whatever had focus before, and `enter` pressed
+   a **nav button**. Fixed by focusing after insertion. No test would have found
+   this; only typing into the real window did.
+
+Verified end to end: `+ add name` → typed `gedu nooma / Wolof / Senegal / field
+notes 2026-08` → `enter` → written to SQLite, and the heading went `3` to `4`.
+
+**A source that is a reference reads `R2` in `primary`**, and free text reads
+plain. Both come from the one place a source cell is built.
+
+**Next session starts at:** BUILD.md §6, week 5, item **25** — the constituent
+and safety sections with severity chips. `renderSection` already takes them;
+this session is two more `SectionSpec`s, the `severity` chooser, and
+`claim_columns` already names their columns.
+
 ---
 
 ## Open questions

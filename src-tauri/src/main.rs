@@ -8,9 +8,10 @@ use std::time::{Duration, Instant};
 use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_output, corpus, day_log, default_path, nav_counts, nearest_name, note_for_today,
-    open_monograph, parse_fetch, record, save_note, search, set_floor_day, status, today_stats,
-    Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult, Status, TodayStats,
+    add_claim, add_output, claims, corpus, day_log, default_path, nav_counts, nearest_name,
+    note_for_today, open_monograph, parse_fetch, record, save_note, search, set_floor_day, status,
+    today_stats, Claim, Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult,
+    Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -112,6 +113,21 @@ fn ledger_corpus() -> std::result::Result<Corpus, String> {
 }
 
 #[tauri::command]
+fn ledger_claims(id: i64, table: String) -> std::result::Result<Vec<Claim>, String> {
+    claims(&ledger_path(), id, &table).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_add_claim(
+    id: i64,
+    table: String,
+    values: Vec<String>,
+    source_note: Option<String>,
+) -> std::result::Result<i64, String> {
+    add_claim(&ledger_path(), id, &table, values, source_note).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_record(id: i64) -> std::result::Result<Record, String> {
     record(&ledger_path(), id).map_err(|error| error.to_string())
 }
@@ -163,7 +179,9 @@ fn main() {
             ledger_corpus,
             ledger_search,
             ledger_nearest_name,
-            ledger_record
+            ledger_record,
+            ledger_claims,
+            ledger_add_claim
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

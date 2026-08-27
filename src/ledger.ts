@@ -140,6 +140,26 @@ export async function record(id: number): Promise<Record> {
   return invoke<Record>("ledger_record", { id });
 }
 
+export type Claim = {
+  id: number;
+  cells: (string | null)[];
+  source_reference_id: number | null;
+  source_note: string | null;
+};
+
+export async function claims(id: number, table: string): Promise<Claim[]> {
+  return invoke<Claim[]>("ledger_claims", { id, table });
+}
+
+export async function addClaim(
+  id: number,
+  table: string,
+  values: string[],
+  sourceNote: string | null,
+): Promise<number> {
+  return invoke<number>("ledger_add_claim", { id, table, values, sourceNote });
+}
+
 export type SearchResult = {
   monograph_ids: number[];
   hits: number;
