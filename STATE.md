@@ -1100,6 +1100,61 @@ Additive across groups, OR within a group, **all state in the URL hash**. Note
 that `conservation concern` has no column in schema v4 — check that flag
 against the schema before building it.
 
+### session 21 — the filter rail, and all of its state in the URL hash
+
+**Landed**
+
+- `src/hash.ts` — `readHash`, `readList`, `writeList`, `toggleInList`.
+- `src/screens/filters.ts` — the four groups, the facet counts, and
+  `applyFilters`: **additive across groups, OR within a group**.
+- The 208px rail beside the corpus, with `all 9 families` expanding the family
+  group.
+- Rust: `published` and `benefit_sharing` per row, so both buildable flags are
+  answered from the same query the table already runs.
+
+`just check` passes: 282 pytest, 39 cargo, tsc clean.
+
+**The hash round trip is proven by construction**
+
+A filter click calls `toggleInList`, which does nothing but set
+`window.location.hash`. The table re-renders because `hashchange` fires and
+`render()` reads the params back out. So the screenshot of `sourced` +
+`E4 human uncontrolled` filtering nine records to two is a demonstration that
+the state made the whole trip through the URL — there is no other path by which
+that table could have changed.
+
+Which means the back button undoes a filter and a filtered view is a place you
+can return to, both for free.
+
+**`conservation concern` cannot be built, and is rendered disabled**
+
+The flag is in DESIGN.md §8's list, but **schema v4 records no conservation
+status** — `monograph` has no such column — and §3 names only Crossref, GBIF
+and WFO as enrichment sources, none of which supplies one. Deriving it from
+`habitat_note` by looking for "CITES" would be inventing botanical data, which
+§8 forbids in exactly those terms.
+
+So it renders in its place in the rail, disabled, counting 0, with the reason in
+its `title`. The artboard's shape is intact and the interface is not lying about
+what it knows. Open question below — it needs either a column, a source, or a
+decision to drop the flag.
+
+**One header label was being truncated.** `FIRST WRITTEN` did not fit its 9.8%
+column at mono 9.5 with .12em tracking. The artboard's head cells set no
+overflow handling at all, so head cells now let their labels run — they are
+short and fixed, and a right-aligned one runs leftward into empty space.
+
+**A gap worth naming: the frontend has no unit tests.** `applyFilters` is a
+pure function encoding a real rule, and nothing checks it but my eyes and a
+screenshot. §7's four commands do not cover the frontend; I added `tsc --noEmit`
+in session 12 and that is all there is. Sessions 20–29 are almost entirely
+frontend. Open question below.
+
+**Next session starts at:** BUILD.md §6, week 4, item **22** — `find` + FTS,
+live hit count, footer counts. The FTS index and `ledger find` exist from
+session 10; this session needs a Rust `search` command over the same `search`
+table and the `find` box above the corpus table, showing `6 hits`.
+
 ---
 
 ## Open questions
@@ -1157,6 +1212,14 @@ answer them alone.
 
 - **New (18):** is `entry 1,412` in artboard 02's autosave footer the entry's
   row id, or a length? Rendered as the id.
+
+- **New (21):** `conservation concern` is a corpus filter flag in DESIGN.md §8,
+  but schema v4 has no conservation column and §3 names no source for one.
+  Rendered disabled. It needs a column, an enrichment source, or dropping.
+- **New (21):** should the frontend get a test runner? `applyFilters`, the hash
+  helpers and the evidence ramp are pure functions encoding real rules, and
+  nothing checks them. Adding `vitest` is a dependency and a sixth command in
+  `just check`; §7 asks for neither. Not added.
 
 ---
 

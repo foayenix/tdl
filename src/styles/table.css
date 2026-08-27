@@ -118,6 +118,12 @@ button.table__row {
   white-space: nowrap;
 }
 
+/* Head labels are short and fixed; the artboard lets them run rather than
+   truncating, and a right-aligned one runs leftward into empty space. */
+.table__head .table__cell {
+  overflow: visible;
+}
+
 .table__cell:last-child {
   padding-right: 0;
 }

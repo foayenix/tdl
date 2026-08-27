@@ -8,6 +8,7 @@ import { append, binomial, clear, el } from "../dom";
 import { evidenceChip, statusChip } from "../chips";
 import type { Evidence } from "../evidence";
 import type { Corpus, CorpusRow } from "../ledger";
+import { applyFilters, renderFilterRail } from "./filters";
 import { COLUMNS, renderTable } from "../table";
 
 function nameCell(row: CorpusRow): Node {
@@ -21,16 +22,23 @@ function nameCell(row: CorpusRow): Node {
   return cell;
 }
 
+/** Whether the family group is showing all of them. Not filter state — a
+ *  disclosure — so it does not belong in the URL. */
+let familiesExpanded = false;
+
 export function renderCorpus(
   host: HTMLElement,
   data: Corpus,
+  params: URLSearchParams,
   open: (id: number) => void,
+  reload: () => void,
 ): void {
   clear(host);
 
-  const shown = data.rows.length;
+  const visible = applyFilters(data.rows, params);
+  const shown = visible.length;
 
-  const rows = data.rows.map((row) => ({
+  const rows = visible.map((row) => ({
     cells: [
       nameCell(row),
       row.family ?? "",
@@ -43,8 +51,10 @@ export function renderCorpus(
     onClick: () => open(row.id),
   }));
 
+  const screen = el("div", { class: "corpus" });
+
   append(
-    host,
+    screen,
     el(
       "header",
       { class: "screen-head" },
@@ -78,5 +88,14 @@ export function renderCorpus(
         ),
       ),
     }),
+  );
+
+  append(
+    host,
+    renderFilterRail(data.rows, params, familiesExpanded, () => {
+      familiesExpanded = true;
+      reload();
+    }),
+    screen,
   );
 }

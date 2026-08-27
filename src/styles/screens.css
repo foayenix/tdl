@@ -636,3 +636,90 @@
   font-size: 10.5px;
   color: var(--muted);
 }
+
+/* ── artboard 03 · filter rail — 208px fixed ────────────────────────── */
+
+.app-content--railed {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  padding: 0;
+}
+
+.filter-rail {
+  width: var(--filter-rail-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+  padding: var(--space-18) var(--space-16);
+  border-right: 1px solid var(--hairline);
+  overflow: auto;
+}
+
+.corpus {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--content-padding);
+  overflow: auto;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.filter-group__label {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  line-height: 1;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 1px 0;
+}
+
+.filter-item__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-item__count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.filter-item.is-disabled .filter-item__count {
+  color: var(--disabled-ink);
+}
+
+.filter-more {
+  align-self: flex-start;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--size-emphasis);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.filter-more:hover {
+  text-decoration: underline;
+}

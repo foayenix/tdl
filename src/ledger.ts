@@ -99,6 +99,8 @@ export type CorpusRow = {
   indications: number;
   evidence: string | null;
   first_written: string;
+  published: boolean;
+  benefit_sharing: boolean;
 };
 
 export type Corpus = {

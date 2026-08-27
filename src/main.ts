@@ -1,15 +1,16 @@
 import { append, clear, el } from "./dom";
 import { corpus, dayLog, navCounts, note, status, todayStats } from "./ledger";
 import type { Corpus, DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
+import { readHash } from "./hash";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
 import { renderCorpus } from "./screens/corpus";
 import { renderToday } from "./screens/today";
 
 function routeFromHash(): Route {
-  const hash = window.location.hash.replace(/^#\/?/, "");
   // Today opens on launch (DESIGN.md §8).
-  return BUILT.has(hash as Route) ? (hash as Route) : "today";
+  const { route } = readHash();
+  return BUILT.has(route as Route) ? (route as Route) : "today";
 }
 
 type Loaded = {
@@ -65,7 +66,10 @@ async function render(): Promise<void> {
 
   clear(app);
 
-  const screen = el("main", { class: "app-content" });
+  // The corpus puts a filter rail beside the content; the shell holds both.
+  const screen = el("main", {
+    class: route === "corpus" ? "app-content app-content--railed" : "app-content",
+  });
 
   // The footer lives at the foot of the sidebar, not in a bar across the
   // window — artboard 02 puts it there.
@@ -82,7 +86,7 @@ async function render(): Promise<void> {
   }
   else if (route === "corpus" && catalogue) {
     // The monograph screen is session 23; until then a row press does nothing.
-    renderCorpus(screen, catalogue, () => {});
+    renderCorpus(screen, catalogue, readHash().params, () => {}, () => void render());
   } else if (route === "system") renderSystem(screen);
   else if (error) append(screen, el("div", { class: "trouble" }, error));
 }

@@ -266,7 +266,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 18 · **Artboard 02** — autosaving note + the three deposit rows
 - [x] 19 · **Artboard 02** — fourteen-day table; sidecar wired to `Fetch`
 - [x] 20 · **Artboard 03** — corpus table
-- [ ] 21 · **Artboard 03** — filter rail, URL-hash state
+- [x] 21 · **Artboard 03** — filter rail, URL-hash state
 - [ ] 22 · **Artboard 03** — `find` + FTS, live hit count, footer counts
 
 **Week 5 — the monograph record**

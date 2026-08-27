@@ -252,6 +252,12 @@ pub struct CorpusRow {
     /// has none. A monograph's headline evidence is the maximum (BUILD.md §4).
     pub evidence: Option<String>,
     pub first_written: String,
+    /// Bound to at least one output. The `never published on` flag is the
+    /// absence of this on a record that is `sourced` or `reviewed`.
+    pub published: bool,
+    /// Has a benefit-sharing record. Its absence is a corpus filter flag, and
+    /// benefit-sharing is not optional chrome (DESIGN.md §8).
+    pub benefit_sharing: bool,
 }
 
 /// The corpus screen: its rows, its header counts and its footer counts.
@@ -282,7 +288,9 @@ pub fn corpus(path: &Path) -> Result<Corpus> {
                 (SELECT count(*) FROM indication i WHERE i.monograph_id = m.id),
                 (SELECT i.evidence FROM indication i WHERE i.monograph_id = m.id
                    ORDER BY {EVIDENCE_RANK} DESC LIMIT 1),
-                m.first_written
+                m.first_written,
+                EXISTS (SELECT 1 FROM output_monograph om WHERE om.monograph_id = m.id),
+                EXISTS (SELECT 1 FROM benefit_sharing b WHERE b.monograph_id = m.id)
          FROM monograph m
          ORDER BY m.first_written, m.id"
     );
@@ -299,6 +307,8 @@ pub fn corpus(path: &Path) -> Result<Corpus> {
             indications: row.get(6)?,
             evidence: row.get(7)?,
             first_written: row.get(8)?,
+            published: row.get::<_, i64>(9)? != 0,
+            benefit_sharing: row.get::<_, i64>(10)? != 0,
         })
     })?;
 
