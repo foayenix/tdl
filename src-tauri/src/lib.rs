@@ -97,21 +97,67 @@ pub fn open_checked(path: &Path) -> Result<Connection> {
     Ok(connection)
 }
 
-/// What the footer shows: the path, the size on disk, and the schema.
+/// What the footer shows: the path, the size on disk, the schema, and when the
+/// file was last written — artboard 02's `38.2 MB · saved 14:22`.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct Status {
     pub path: String,
     pub bytes: u64,
     pub schema_version: i64,
+    /// Seconds since the epoch, or None if the filesystem will not say.
+    pub last_write: Option<i64>,
 }
 
 pub fn status(path: &Path) -> Result<Status> {
     let connection = open_checked(path)?;
-    let bytes = std::fs::metadata(path).map(|meta| meta.len()).unwrap_or(0);
+    let metadata = std::fs::metadata(path).ok();
+
+    let bytes = metadata.as_ref().map(|meta| meta.len()).unwrap_or(0);
+    let last_write = metadata
+        .and_then(|meta| meta.modified().ok())
+        .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|since| since.as_secs() as i64);
 
     Ok(Status {
         path: path.display().to_string(),
         bytes,
         schema_version: user_version(&connection)?,
+        last_write,
+    })
+}
+
+/// The counts beside each nav item (artboard 02's left nav).
+///
+/// `outputs` serves both `Outputs` and `The Wall` — they are the same figure,
+/// which is why the artboard shows 27 twice.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct NavCounts {
+    pub today_minutes: i64,
+    pub monographs: i64,
+    pub references: i64,
+    pub outputs: i64,
+    /// Phone lines not yet routed. The nav shows a badge when this is not zero.
+    pub inbox_pending: i64,
+}
+
+fn count(connection: &Connection, sql: &str) -> Result<i64> {
+    Ok(connection.query_row(sql, [], |row| row.get(0))?)
+}
+
+pub fn nav_counts(path: &Path) -> Result<NavCounts> {
+    let connection = open_checked(path)?;
+
+    Ok(NavCounts {
+        today_minutes: count(
+            &connection,
+            "SELECT coalesce((SELECT minutes FROM entry WHERE date = date('now')), 0)",
+        )?,
+        monographs: count(&connection, "SELECT count(*) FROM monograph")?,
+        references: count(&connection, "SELECT count(*) FROM reference")?,
+        outputs: count(&connection, "SELECT count(*) FROM output")?,
+        inbox_pending: count(
+            &connection,
+            "SELECT count(*) FROM inbox_line WHERE consumed_at IS NULL",
+        )?,
     })
 }

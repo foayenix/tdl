@@ -257,7 +257,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 12 · `cargo tauri init`, window, WAL connection, `user_version` guard; pick vanilla vs Preact
 - [x] 13 · **Artboard 01** — every token as a CSS variable, fonts self-hosted
 - [x] 14 · **Artboard 01** — component specimens with all five states (§4 of `DESIGN.md`)
-- [ ] 15 · Left nav, live counts, real footer (path, size, last write)
+- [x] 15 · Left nav, live counts, real footer (path, size, last write)
 - [ ] 16 · Table primitive — column widths, row heights, hover/selected, **the unsourced row**
 
 **Week 4 — today and corpus**
