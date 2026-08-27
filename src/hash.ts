@@ -46,3 +46,19 @@ export function toggleInList(
     : [...current, value];
   writeList(route, params, key, next);
 }
+
+/**
+ * Set one parameter without stacking a history entry.
+ *
+ * A live search would otherwise put every keystroke in the back stack, which
+ * turns the back button from "undo my filter" into "delete one letter".
+ */
+export function replaceParam(route: string, params: URLSearchParams, key: string, value: string): void {
+  const next = new URLSearchParams(params);
+  if (value) next.set(key, value);
+  else next.delete(key);
+
+  const query = next.toString();
+  const url = `${window.location.pathname}${window.location.search}#${query ? `/${route}?${query}` : `/${route}`}`;
+  window.history.replaceState(null, "", url);
+}

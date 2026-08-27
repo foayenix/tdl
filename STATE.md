@@ -1155,6 +1155,60 @@ live hit count, footer counts. The FTS index and `ledger find` exist from
 session 10; this session needs a Rust `search` command over the same `search`
 table and the `find` box above the corpus table, showing `6 hits`.
 
+### session 22 — `find` over FTS5, with the live hit count
+
+**Landed**
+
+- Rust: `search()` over the `search` table, `to_match()`, `nearest_name()` and
+  a Levenshtein distance.
+- `src/screens/find.ts` — the box above the corpus table, 120ms debounce,
+  `esc` clears.
+- The query joins the other filters in the hash.
+- 8 Rust tests (47 in total).
+
+`just check` passes: 282 pytest, 47 cargo, tsc clean. Verified in the running
+window: typing `bark` reads `4 hits` and narrows `9 monographs · 4 shown` to the
+four bark records.
+
+**The third pair of implementations, held together the same way**
+
+`to_match` is now in both languages, like `current_streak` and `parse_fetch`
+before it. `tests/search.rs` asserts the Rust answer equals **the Python
+answer** — not a literal — for ten awkward inputs including `bark"`,
+`NEAR(a b)`, `a OR b`, `10.1016/j.jep` and `caïlcédrat`. Two ideas of what a
+search means is the failure mode, and it fails the build now.
+
+**A claim hit lands on its plant.** Searching a condition, a vernacular name or
+a compound narrows the corpus to the records that carry it, and a plant hit
+through several rows is listed once — the `hits` count reports every row, the
+table shows every plant.
+
+**The query is in the hash, but written with `replaceState`**
+
+Filter state belongs in the URL (§8) and a search is filter state. But
+assigning to `location.hash` on every keystroke would put every letter in the
+back stack, turning the back button from "undo my filter" into "delete one
+letter". `replaceParam` swaps the entry instead. Filters still push; only the
+live query replaces.
+
+**`nearest_name` is built but not yet shown.** It belongs to artboard 08 state
+6, which is session 28. It is here because it is the same query surface and
+testing it now was free.
+
+**One clippy finding worth recording:** `Option::is_none_or` is stable since
+Rust 1.82 and the crate declares `rust-version = "1.77"` — the MSRV Tauri v2
+itself requires. Written out longhand rather than raising the floor, because
+the floor is the portability promise and one convenience method is not worth
+it.
+
+**Week 4 is complete.** Artboards 02 and 03 are built.
+
+**Next session starts at:** BUILD.md §6, week 5, item **23** — artboard 05, the
+monograph record, which §1 says does not move and is the screen where the work
+actually happens. Header, identity strip, summary strip. Note that `wfo_id` is
+NULL for every record (the session 09 gap) so the identity strip will render a
+blank there.
+
 ---
 
 ## Open questions

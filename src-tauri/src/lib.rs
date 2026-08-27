@@ -330,6 +330,148 @@ pub fn corpus(path: &Path) -> Result<Corpus> {
     })
 }
 
+/// What a `find` searched and what it found.
+// f64 has no Eq — the elapsed time is a measurement, not an identity.
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
+pub struct SearchResult {
+    /// Records the query touched, by name or through a claim row.
+    pub monograph_ids: Vec<i64>,
+    /// Every hit, claim rows included — artboard 03's `6 hits`.
+    pub hits: i64,
+    pub monographs_searched: i64,
+    pub references_searched: i64,
+    pub outputs_searched: i64,
+    pub milliseconds: f64,
+}
+
+/// Turn what someone typed into an FTS5 MATCH expression.
+///
+/// Every token is quoted, so a hyphen, the slash in a DOI or a literal `OR` is
+/// searched for rather than parsed as syntax. Tokens are ANDed. This mirrors
+/// `ledger.find.to_match`; both are tested against the same awkward inputs.
+pub fn to_match(query: &str) -> Option<String> {
+    let tokens: Vec<String> = query
+        .split(|character: char| !character.is_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .map(|token| format!("\"{token}\""))
+        .collect();
+
+    if tokens.is_empty() {
+        None
+    } else {
+        Some(tokens.join(" AND "))
+    }
+}
+
+pub fn search(path: &Path, query: &str) -> Result<SearchResult> {
+    let connection = open_checked(path)?;
+
+    let searched = SearchResult {
+        monographs_searched: count(&connection, "SELECT count(*) FROM monograph")?,
+        references_searched: count(&connection, "SELECT count(*) FROM reference")?,
+        outputs_searched: count(&connection, "SELECT count(*) FROM output")?,
+        ..SearchResult::default()
+    };
+
+    let Some(expression) = to_match(query) else {
+        return Ok(searched);
+    };
+
+    let started = std::time::Instant::now();
+
+    let mut statement = connection.prepare(
+        "SELECT kind, row_id, monograph_id FROM search WHERE search MATCH ?1 ORDER BY rank",
+    )?;
+
+    let mut monograph_ids: Vec<i64> = Vec::new();
+    let mut hits = 0i64;
+
+    let rows = statement.query_map([&expression], |row| {
+        let kind: String = row.get(0)?;
+        let row_id: i64 = row.get(1)?;
+        let monograph_id: Option<i64> = row.get(2)?;
+        Ok((kind, row_id, monograph_id))
+    })?;
+
+    for row in rows {
+        let (kind, row_id, monograph_id) = row?;
+        hits += 1;
+
+        // A monograph hit points at itself; a claim hit points at its plant.
+        let touched = if kind == "monograph" {
+            Some(row_id)
+        } else {
+            monograph_id
+        };
+
+        if let Some(id) = touched {
+            if !monograph_ids.contains(&id) {
+                monograph_ids.push(id);
+            }
+        }
+    }
+
+    Ok(SearchResult {
+        monograph_ids,
+        hits,
+        milliseconds: started.elapsed().as_secs_f64() * 1000.0,
+        ..searched
+    })
+}
+
+/// The nearest accepted name to a query, and its edit distance.
+///
+/// Artboard 08 state 6 shows this beside a query that found nothing, so the
+/// answer to "did I spell it wrong" is on screen rather than in your head.
+pub fn nearest_name(path: &Path, query: &str) -> Result<Option<(String, usize)>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection
+        .prepare("SELECT accepted_name FROM monograph WHERE accepted_name IS NOT NULL")?;
+    let names = statement.query_map([], |row| row.get::<_, String>(0))?;
+
+    let query = query.to_lowercase();
+    let mut best: Option<(String, usize)> = None;
+
+    for name in names {
+        let name = name?;
+        let distance = edit_distance(&query, &name.to_lowercase());
+        // Written out rather than `is_none_or`, which is newer than this
+        // crate's declared MSRV.
+        let closer = match &best {
+            None => true,
+            Some((_, shortest)) => distance < *shortest,
+        };
+        if closer {
+            best = Some((name, distance));
+        }
+    }
+
+    Ok(best)
+}
+
+/// Levenshtein, two rows at a time.
+fn edit_distance(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+
+    let mut previous: Vec<usize> = (0..=b.len()).collect();
+
+    for (i, left) in a.iter().enumerate() {
+        let mut current = vec![i + 1];
+        for (j, right) in b.iter().enumerate() {
+            current.push(
+                (previous[j + 1] + 1)
+                    .min(current[j] + 1)
+                    .min(previous[j] + usize::from(left != right)),
+            );
+        }
+        previous = current;
+    }
+
+    previous[b.len()]
+}
+
 /// What `ledger ref --json` said, reduced to what the deposit row shows.
 ///
 /// The sidecar owns Crossref (BUILD.md §3): Rust has no HTTP client and never

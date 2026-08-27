@@ -7,8 +7,9 @@
 import { append, binomial, clear, el } from "../dom";
 import { evidenceChip, statusChip } from "../chips";
 import type { Evidence } from "../evidence";
-import type { Corpus, CorpusRow } from "../ledger";
+import type { Corpus, CorpusRow, SearchResult } from "../ledger";
 import { applyFilters, renderFilterRail } from "./filters";
+import { renderFind } from "./find";
 import { COLUMNS, renderTable } from "../table";
 
 function nameCell(row: CorpusRow): Node {
@@ -26,6 +27,10 @@ function nameCell(row: CorpusRow): Node {
  *  disclosure — so it does not belong in the URL. */
 let familiesExpanded = false;
 
+/** The live search, held between renders so typing does not lose its place. */
+let findQuery = "";
+let findResult: SearchResult | null = null;
+
 export function renderCorpus(
   host: HTMLElement,
   data: Corpus,
@@ -35,7 +40,15 @@ export function renderCorpus(
 ): void {
   clear(host);
 
-  const visible = applyFilters(data.rows, params);
+  // The hash is the source of truth on load; typing keeps it in step.
+  const fromHash = params.get("find") ?? "";
+  if (fromHash !== findQuery && findResult === null) findQuery = fromHash;
+
+  let visible = applyFilters(data.rows, params);
+  if (findQuery && findResult) {
+    const hit = new Set(findResult.monograph_ids);
+    visible = visible.filter((row) => hit.has(row.id));
+  }
   const shown = visible.length;
 
   const rows = visible.map((row) => ({
@@ -69,6 +82,11 @@ export function renderCorpus(
             `${shown} shown · sorted by first written`,
         ),
       ),
+      renderFind(findQuery, findResult, (query, result) => {
+        findQuery = query;
+        findResult = result;
+        reload();
+      }),
     ),
     renderTable(COLUMNS.corpus, rows, {
       footer: el(

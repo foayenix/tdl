@@ -114,6 +114,23 @@ export async function corpus(): Promise<Corpus> {
   return invoke<Corpus>("ledger_corpus");
 }
 
+export type SearchResult = {
+  monograph_ids: number[];
+  hits: number;
+  monographs_searched: number;
+  references_searched: number;
+  outputs_searched: number;
+  milliseconds: number;
+};
+
+export async function search(query: string): Promise<SearchResult> {
+  return invoke<SearchResult>("ledger_search", { query });
+}
+
+export async function nearestName(query: string): Promise<[string, number] | null> {
+  return invoke<[string, number] | null>("ledger_nearest_name", { query });
+}
+
 export type FetchResult = {
   ok: boolean;
   reference_id: number | null;

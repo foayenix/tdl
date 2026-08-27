@@ -723,3 +723,57 @@
 .filter-more:hover {
   text-decoration: underline;
 }
+
+/* ── artboard 03 · find ─────────────────────────────────────────────── */
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  background: var(--inset);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  padding: var(--space-6) 10px;
+  min-width: 280px;
+}
+
+.find:focus-within {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+  border-color: var(--primary-ring);
+}
+
+.find__label {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  line-height: 1;
+  letter-spacing: var(--track-micro-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  flex: none;
+}
+
+.find__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell-sm);
+  color: var(--ink);
+}
+
+.find__input:focus {
+  outline: none;
+}
+
+.find__input::placeholder {
+  color: var(--disabled-ink);
+}
+
+.find__count {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+  flex: none;
+}
