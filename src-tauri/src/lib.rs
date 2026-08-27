@@ -126,6 +126,46 @@ pub fn status(path: &Path) -> Result<Status> {
     })
 }
 
+/// The floor is 20 minutes. A floor day is a success, and the interface must
+/// never render one as a shortfall (DESIGN.md §8, artboard 02).
+pub const FLOOR_MINUTES: i64 = 20;
+
+/// BUILD.md §4's streak query, verbatim: the length of the most recent
+/// unbroken run of entries. Whether that run is still live is decided above it,
+/// in `current_streak`.
+const RUN_LENGTH: &str = "
+SELECT count(*) FROM entry
+WHERE date >= (SELECT max(date) FROM entry
+               WHERE date NOT IN (SELECT date(date,'+1 day') FROM entry))
+";
+
+/// The longest unbroken run ever recorded — artboard 02's `longest 96`.
+///
+/// Gaps and islands: consecutive dates minus their row number land on the same
+/// day, so grouping by that day counts each run.
+const LONGEST_RUN: &str = "
+SELECT coalesce(max(length), 0) FROM (
+    SELECT count(*) AS length FROM (
+        SELECT date(date, '-' || row_number() OVER (ORDER BY date) || ' day') AS island
+        FROM entry
+    )
+    GROUP BY island
+)
+";
+
+/// Everything artboard 02's stat row shows, in one round trip.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct TodayStats {
+    pub date: String,
+    pub minutes: i64,
+    pub floor_day: bool,
+    pub current_streak: i64,
+    pub longest_streak: i64,
+    /// `floor met 118 / 140` — days that reached the floor, over days logged.
+    pub floor_met: i64,
+    pub days_logged: i64,
+}
+
 /// The counts beside each nav item (artboard 02's left nav).
 ///
 /// `outputs` serves both `Outputs` and `The Wall` — they are the same figure,
@@ -142,6 +182,72 @@ pub struct NavCounts {
 
 fn count(connection: &Connection, sql: &str) -> Result<i64> {
     Ok(connection.query_row(sql, [], |row| row.get(0))?)
+}
+
+/// The streak as the interface reports it: 0 once the run has been broken.
+///
+/// A run counts as live while it reaches today or yesterday — an unlogged
+/// morning is not a broken streak. Artboard 08 state 5 is the specification for
+/// the broken case. This mirrors `ledger.entries.current_streak`; the two are
+/// kept identical deliberately and both are tested against the same cases.
+fn current_streak(connection: &Connection) -> Result<i64> {
+    let last: Option<String> =
+        connection.query_row("SELECT max(date) FROM entry", [], |row| row.get(0))?;
+
+    let Some(last) = last else { return Ok(0) };
+
+    let yesterday: String =
+        connection.query_row("SELECT date('now','-1 day')", [], |row| row.get(0))?;
+
+    if last < yesterday {
+        return Ok(0);
+    }
+
+    count(connection, RUN_LENGTH)
+}
+
+pub fn today_stats(path: &Path) -> Result<TodayStats> {
+    let connection = open_checked(path)?;
+
+    let date: String = connection.query_row("SELECT date('now')", [], |row| row.get(0))?;
+
+    let today: Option<(i64, i64)> = connection
+        .query_row(
+            "SELECT minutes, floor_day FROM entry WHERE date = ?1",
+            [&date],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .ok();
+
+    let (minutes, floor_day) = today.unwrap_or((0, 0));
+
+    Ok(TodayStats {
+        date,
+        minutes,
+        floor_day: floor_day != 0,
+        current_streak: current_streak(&connection)?,
+        longest_streak: count(&connection, LONGEST_RUN)?,
+        floor_met: count(
+            &connection,
+            &format!("SELECT count(*) FROM entry WHERE minutes >= {FLOOR_MINUTES}"),
+        )?,
+        days_logged: count(&connection, "SELECT count(*) FROM entry")?,
+    })
+}
+
+/// Mark today a floor day, or unmark it. Opens the day if it is not open yet —
+/// saying "yes, today was a floor day" is itself a record of the day.
+pub fn set_floor_day(path: &Path, floor_day: bool) -> Result<TodayStats> {
+    {
+        let connection = open_checked(path)?;
+        connection.execute(
+            "INSERT INTO entry (date, floor_day) VALUES (date('now'), ?1)
+             ON CONFLICT(date) DO UPDATE SET floor_day = ?1, updated_at = datetime('now')",
+            [i64::from(floor_day)],
+        )?;
+    }
+
+    today_stats(path)
 }
 
 pub fn nav_counts(path: &Path) -> Result<NavCounts> {

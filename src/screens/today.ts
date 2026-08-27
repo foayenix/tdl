@@ -1,0 +1,112 @@
+// Artboard 02 — today. Opens on launch.
+//
+// The floor is 20 minutes and a floor day is a success. The interface must
+// never render one as a shortfall: the word `floor` in `secondary`, never a red
+// mark, never an empty bar (DESIGN.md §8). Nothing on this screen counts down.
+
+import { append, clear, el } from "../dom";
+import { dayName, setFloorDay, type TodayStats } from "../ledger";
+
+/** `current streak 41 days` — label muted, the number in ink at 13px. */
+function stat(label: string, value: number, suffix?: string): HTMLElement {
+  return el(
+    "span",
+    { class: "stat" },
+    label,
+    " ",
+    el("span", { class: "stat__value" }, String(value)),
+    suffix ? ` ${suffix}` : null,
+  );
+}
+
+function head(stats: TodayStats): HTMLElement {
+  return el(
+    "header",
+    { class: "screen-head" },
+    el(
+      "div",
+      { class: "screen-head__title" },
+      el("h1", { class: "board-title" }, "Today"),
+      el("span", { class: "screen-head__date" }, `${stats.date} · ${dayName(stats.date)}`),
+    ),
+    el(
+      "div",
+      { class: "stat-row" },
+      stat("current streak", stats.current_streak, stats.current_streak === 1 ? "day" : "days"),
+      stat("longest", stats.longest_streak),
+      el(
+        "span",
+        { class: "stat" },
+        "floor met ",
+        el("span", { class: "stat__value" }, String(stats.floor_met)),
+        ` / ${stats.days_logged}`,
+      ),
+    ),
+  );
+}
+
+/** The yes/no segmented control. Selected is `ink`, not the accent. */
+function floorToggle(stats: TodayStats, reload: () => void): HTMLElement {
+  const segment = (label: string, on: boolean) => {
+    const button = el(
+      "button",
+      {
+        type: "button",
+        class: `segment${stats.floor_day === on ? " is-selected" : ""}`,
+        "aria-pressed": stats.floor_day === on,
+      },
+      label,
+    );
+    button.addEventListener("click", () => {
+      if (stats.floor_day === on) return;
+      void setFloorDay(on).then(reload);
+    });
+    return button;
+  };
+
+  return el(
+    "div",
+    { class: "floor" },
+    el("span", { class: "label" }, "20-minute floor day"),
+    el("div", { class: "segmented" }, segment("yes", true), segment("no", false)),
+  );
+}
+
+function minutesWorked(stats: TodayStats, reload: () => void): HTMLElement {
+  return el(
+    "div",
+    { class: "today__minutes" },
+    el(
+      "div",
+      { class: "measure" },
+      el("span", { class: "label" }, "minutes worked"),
+      el(
+        "div",
+        { class: "measure__value" },
+        el("span", { class: "display-num" }, String(stats.minutes)),
+        el("span", { class: "measure__unit" }, "min"),
+      ),
+    ),
+    floorToggle(stats, reload),
+  );
+}
+
+export function renderToday(
+  host: HTMLElement,
+  stats: TodayStats,
+  reload: () => void,
+): void {
+  clear(host);
+
+  append(
+    host,
+    head(stats),
+    el(
+      "div",
+      { class: "today__deposit" },
+      minutesWorked(stats, reload),
+      // The note and the three deposit rows land in session 18.
+      el("div", { class: "today__note-slot" }),
+    ),
+  );
+}

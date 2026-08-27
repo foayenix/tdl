@@ -21,8 +21,36 @@ export async function status(): Promise<Status> {
   return invoke<Status>("ledger_status");
 }
 
+export type TodayStats = {
+  date: string;
+  minutes: number;
+  floor_day: boolean;
+  current_streak: number;
+  longest_streak: number;
+  floor_met: number;
+  days_logged: number;
+};
+
 export async function navCounts(): Promise<NavCounts> {
   return invoke<NavCounts>("ledger_nav_counts");
+}
+
+export async function todayStats(): Promise<TodayStats> {
+  return invoke<TodayStats>("ledger_today");
+}
+
+export async function setFloorDay(floorDay: boolean): Promise<TodayStats> {
+  return invoke<TodayStats>("ledger_set_floor_day", { floorDay });
+}
+
+/** The floor is 20 minutes. */
+export const FLOOR_MINUTES = 20;
+
+/** `monday` — lower case, as artboard 02 sets it. */
+export function dayName(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const when = new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1);
+  return when.toLocaleDateString("en-GB", { weekday: "long" }).toLowerCase();
 }
 
 /** `saved 14:22` — the footer's clock, 24-hour, as artboard 02 shows it. */

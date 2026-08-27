@@ -1,27 +1,35 @@
 import { append, clear, el } from "./dom";
-import { navCounts, status } from "./ledger";
-import type { NavCounts, Status } from "./ledger";
+import { navCounts, status, todayStats } from "./ledger";
+import type { NavCounts, Status, TodayStats } from "./ledger";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
-
-// Screens land one per session. Until a route has one, its nav item is
-// disabled — a real state in DESIGN.md §4, not a placeholder screen.
-const SCREENS: Partial<Record<Route, (host: HTMLElement) => void>> = {
-  system: renderSystem,
-};
+import { renderToday } from "./screens/today";
 
 function routeFromHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  return BUILT.has(hash as Route) ? (hash as Route) : "system";
+  // Today opens on launch (DESIGN.md §8).
+  return BUILT.has(hash as Route) ? (hash as Route) : "today";
 }
 
-async function load(): Promise<{ status: Status | null; counts: NavCounts | null; error: string | null }> {
+type Loaded = {
+  status: Status | null;
+  counts: NavCounts | null;
+  today: TodayStats | null;
+  error: string | null;
+};
+
+async function load(): Promise<Loaded> {
   try {
-    return { status: await status(), counts: await navCounts(), error: null };
+    return {
+      status: await status(),
+      counts: await navCounts(),
+      today: await todayStats(),
+      error: null,
+    };
   } catch (error) {
     // A ledger that is missing, or at a schema this build does not read, is a
     // real state with a real instruction. The message says which.
-    return { status: null, counts: null, error: String(error) };
+    return { status: null, counts: null, today: null, error: String(error) };
   }
 }
 
@@ -30,7 +38,7 @@ async function render(): Promise<void> {
   if (!app) return;
 
   const route = routeFromHash();
-  const { status: connected, counts, error } = await load();
+  const { status: connected, counts, today, error } = await load();
 
   clear(app);
 
@@ -46,7 +54,8 @@ async function render(): Promise<void> {
     screen,
   );
 
-  SCREENS[route]?.(screen);
+  if (route === "today" && today) renderToday(screen, today, () => void render());
+  else if (route === "system") renderSystem(screen);
 }
 
 window.addEventListener("hashchange", () => void render());

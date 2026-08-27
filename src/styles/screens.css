@@ -257,3 +257,139 @@
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+/* ── artboard 02 · today ────────────────────────────────────────────── */
+
+.screen-head {
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: var(--space-8);
+}
+
+.screen-head__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-14);
+}
+
+.screen-head__date {
+  font-family: var(--font-mono);
+  font-size: var(--size-emphasis);
+  color: var(--muted);
+}
+
+.stat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+}
+
+.stat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.stat__value {
+  font-size: var(--size-table-cell);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.today__deposit {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+
+.today__minutes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-14) var(--space-18);
+  border-right: 1px solid var(--hairline);
+}
+
+.measure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.measure .label {
+  color: var(--muted);
+}
+
+/* The rule under the figure is `ink`, not a hairline — it is the only place
+   on the screen that weight is used, and it is what makes the number read as
+   a total rather than a field. */
+.measure__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--ink);
+}
+
+.measure__unit {
+  font-family: var(--font-mono);
+  font-size: var(--size-emphasis);
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.floor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.floor .label {
+  color: var(--muted);
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.segment {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border: 0;
+  color: var(--muted);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.segment:hover:not(.is-selected) {
+  background: var(--row-hover);
+  color: var(--ink);
+}
+
+.segment:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* Selected is `ink`, not the accent — this is a fact about the day, not an
+   action, and the accent would read as approval of one answer. */
+.segment.is-selected {
+  color: var(--surface);
+  background: var(--ink);
+}
+
+:root[data-theme="dark"] .segment.is-selected {
+  color: var(--ground);
+  background: var(--ink);
+}

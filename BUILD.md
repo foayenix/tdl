@@ -262,7 +262,7 @@ Thirty sessions. Tick each box as it lands.
 
 **Week 4 — today and corpus**
 
-- [ ] 17 · **Artboard 02** — stat row, floor toggle
+- [x] 17 · **Artboard 02** — stat row, floor toggle
 - [ ] 18 · **Artboard 02** — autosaving note + the three deposit rows
 - [ ] 19 · **Artboard 02** — fourteen-day table; sidecar wired to `Fetch`
 - [ ] 20 · **Artboard 03** — corpus table

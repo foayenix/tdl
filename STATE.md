@@ -855,6 +855,58 @@ worked, all in `display num`. Note that `longest_streak` has no Rust query yet
 `entry.floor_day` column whose meaning is still an open question from that
 session.
 
+### session 17 — artboard 02's stat row and floor toggle
+
+**Landed**
+
+- Rust: `TodayStats`, `today_stats()`, `set_floor_day()`, `FLOOR_MINUTES = 20`,
+  and `LONGEST_RUN` — a gaps-and-islands query for `longest 96`.
+- `src/screens/today.ts` + the styles. Today now opens on launch, as
+  DESIGN.md §8 says it must.
+- 12 Rust tests.
+
+`just check` passes: 282 pytest, 18 cargo, tsc clean.
+
+**The streak now exists in two languages, and a test holds them together**
+
+§3 says the CLI does these reads directly too, so `current_streak` is in both
+Python and Rust. Two implementations of one rule is exactly where drift
+happens, so `src-tauri/tests/streak.rs` runs **every case from §7 test 7**
+against one database and asserts the Rust answer equals the Python answer —
+not equals a literal, equals *the other implementation*. If either side is
+changed alone, the test fails.
+
+`longest` is Rust-only for now; nothing in the CLI shows it yet.
+
+**The floor is never rendered as a shortfall**
+
+Nothing on this screen counts down, and there is no red mark or empty bar
+anywhere near it. The `floor met 47 / 47` figure is a count of days that
+reached the floor, not a percentage of a target.
+
+The yes/no control's selected segment is **`ink`, not the accent** — the
+artboard has it that way and it is right: this is a fact about the day, not an
+action, and the accent would read as approval of one answer over the other.
+The comment in `screens.css` says so.
+
+**`floor met N / M` — M is days logged**
+
+Artboard 02 reads `118 / 140` and does not say what the denominator is. It
+could be days logged or calendar days since the first entry. Built as **days
+logged**, which is the smaller reading. Open question below.
+
+**The floor toggle opens the day.** Saying "yes, today was a floor day" on a day
+with no entry creates one at 0 minutes — the same reasoning as `ledger win` in
+session 05: the statement is itself a record of the day. Two tests cover it,
+including one asserting that toggling twice does not open two days.
+
+**Next session starts at:** BUILD.md §6, week 4, item **18** — the autosaving
+note (2s debounce, footer `autosaved 14:22 · entry 1,412`, plus an explicit
+`Save entry`) and the three deposit rows: monograph `Open` (primary), reference
+`Fetch` (secondary, calls Crossref), output `Add` (quiet). The right-hand cell
+of the deposit card is already reserved for it. **`Fetch` needs the sidecar,
+which is session 19** — 18 should build the row and leave the call to 19.
+
 ---
 
 ## Open questions
@@ -906,6 +958,9 @@ answer them alone.
   `monograph.wfo_id`, but §3 names WFO and invariant 2 requires the ID. It will
   be NULL for every record in v0.1 and artboard 05's identity strip will show a
   blank. Allocate a session, or decide to ship without it.
+
+- **New (17):** in `floor met 118 / 140`, is 140 days *logged* or calendar days
+  since the first entry? Built as days logged.
 
 ---
 
