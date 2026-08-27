@@ -108,6 +108,44 @@ Nothing before it is outstanding.
 writes an entry, prints the streak. §7 test 7 (streak query: no entries, one
 entry, gap yesterday, gap today, out of order) belongs to that session.
 
+### session 03 — `ledger log` writes a day and prints the streak
+
+**Landed**
+
+- `ledger/entries.py` — `log()`, `run_length()`, `current_streak()`,
+  `FLOOR_MINUTES = 20`.
+- `ledger log --minutes 90 --note "…" [--date YYYY-MM-DD] [--floor]`, printing
+  `2026-08-27 · thursday · 45 min · streak 6 days`.
+- **§7 test 7, streak query** — all five cases named in §7 plus a broken run, a
+  run before a gap, and a lone entry ninety days back.
+
+`just check` passes: ruff clean, 36 tests green.
+
+**The streak needed one decision the contract does not settle**
+
+§4's query returns the length of the most recent unbroken run. Artboard 08
+state 5 says a run broken by three days reads **0**, not 41 — so the raw query
+alone contradicts the artboard, and the artboards win. `current_streak()` runs
+§4's SQL **verbatim** and returns 0 when the run no longer reaches today or
+yesterday.
+
+The one-day grace is mine: without it the streak reads 0 every morning before
+the first block is logged, which is exactly the shaming §8 forbids. Flagged
+below.
+
+**Also decided**
+
+- **Minutes accumulate, notes append.** `ledger log` records a *block*, and a
+  day usually holds more than one; artboard 02's single note is the in-app
+  autosaving field editing the same row. `--floor` sticks until changed.
+- `--date` is validated before the database is opened, so a typo cannot create
+  a file.
+
+**Next session starts at:** BUILD.md §6, week 1, item **04** — `ledger mono`:
+skeleton, `$EDITOR` template, status transitions. Note that the sourcing
+invariant guarding `reviewed` is session 06 (it needs the claim tables), so 04
+can only enforce the ordering of the four statuses, not the invariant.
+
 ---
 
 ## Open questions
@@ -131,6 +169,11 @@ answer them alone.
   day" mark, or is it derived from `minutes >= 20`? Artboard 02 shows both a
   yes/no toggle and a derived `floor met 118 / 140`. Stored as an explicit flag;
   the derived count can stay derived.
+
+- **New (03):** is one day of grace right before the streak reads 0? Logged
+  yesterday but not yet today currently keeps the run live. Artboard 08 only
+  specifies the three-day case. If it should be strict, `current_streak()` is
+  the one line to change.
 
 ---
 
