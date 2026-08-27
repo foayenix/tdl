@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 1, foundation.
+**Now:** week 2, the corpus in the database.
 
 ---
 
@@ -203,6 +203,44 @@ tables. Session 06 lands the trigger and §7 test 4 with it.
 
 **Next session starts at:** BUILD.md §6, week 1, item **05** — `ledger win`,
 an output linked to today's entry.
+
+### session 05 — `ledger win` records an output against today's entry
+
+**Landed**
+
+- `ledger/outputs.py` — `record()`, `entry_for()`, `counts_by_kind()`, `total()`.
+- `ledger win KIND TITLE [--venue --url --date]`, printing the output and the
+  running wall count.
+- `counts_by_kind()` returns every kind including the empty ones, in ramp
+  order — artboard 04's header counts show all five whether or not they have
+  rows, and a zero is a real number there.
+- 9 tests.
+
+`just check` passes: ruff clean, 62 tests green.
+
+**Two dates, not one**
+
+`--date` is when the output *went out*; the entry it attaches to is **today**,
+the day it was deposited. A paper published in June does not retroactively make
+June a day worked, and artboard 02 says "deposit — attach to today". Recording
+one on an unlogged day opens that day at 0 minutes, because depositing is work
+and the alternative is an output hanging off nothing.
+
+That 0-minute day counts toward the streak. It is under the 20-minute floor, so
+it will not count toward `floor met` — which reads correctly: a day that
+happened, below the floor.
+
+**Not here yet:** the plant link. Artboard 04 shows `plants` on every card and
+`whole corpus` / `method, no plant` where there is none; that is
+`output_monograph` in `002_links.sql`, session 07.
+
+**Week 1 is complete.** The five foundation items are ticked and the daily loop
+exists in the CLI: log a day, open a monograph, record a win.
+
+**Next session starts at:** BUILD.md §6, week 2, item **06** — `001_claims.sql`
+(`vernacular`, `indication`, `constituent`, `safety`, `benefit_sharing`), the
+sourcing trigger, and §7 test 4. This is the session that finally makes
+`--status reviewed` refuse an unsourced record.
 
 ---
 
