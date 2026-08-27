@@ -1,0 +1,19 @@
+{
+  "usageKey": 3190368,
+  "scientificName": "Khaya senegalensis (Desr.) A.Juss.",
+  "canonicalName": "Khaya senegalensis",
+  "rank": "SPECIES",
+  "status": "ACCEPTED",
+  "confidence": 97,
+  "matchType": "EXACT",
+  "kingdom": "Plantae",
+  "phylum": "Tracheophyta",
+  "order": "Sapindales",
+  "family": "Meliaceae",
+  "genus": "Khaya",
+  "species": "Khaya senegalensis",
+  "kingdomKey": 6,
+  "familyKey": 2397,
+  "synonym": false,
+  "alternatives": []
+}

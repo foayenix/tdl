@@ -17,6 +17,7 @@ from .commands import log as log_command
 from .commands import migrate as migrate_command
 from .commands import mono as mono_command
 from .commands import ref as ref_command
+from .commands import resolve as resolve_command
 from .commands import seed as seed_command
 from .commands import win as win_command
 from .db import DEFAULT_DB_PATH
@@ -51,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     link_command.register(subparsers)
     seed_command.register(subparsers)
     ref_command.register(subparsers)
+    resolve_command.register(subparsers)
 
     return parser
 

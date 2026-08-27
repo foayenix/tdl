@@ -401,6 +401,70 @@ Session 04 left a question there: whether artboard 08 state 4's candidate list
 must persist. **GBIF is likely blocked by the same policy as Crossref** — check
 first, and expect to land the resolver with a shape fixture the same way.
 
+### session 09 — the GBIF resolver, the 0.90 threshold, and the review queue
+
+**Landed**
+
+- `ledger/gbif.py` — `match()`, `parse()`, `Match`, `CONFIDENCE_THRESHOLD = 0.90`.
+  GBIF scores 0–100; everything else in the design talks 0–1, so it converts on
+  the way in and `confidence 0.42` means what the artboard says it means.
+- `ledger/naming.py` — `queue()`, `resolve()`, `accept()`.
+- `ledger resolve [NAME] [--queue] [--accept] [--threshold] [--json]`.
+- **§7 test 5** plus 22 more.
+
+`just check` passes: ruff clean, 201 green, 2 deselected (network).
+
+**Session 04's question is answered: the queue needs no table**
+
+`status = 'skeleton' AND gbif_key IS NULL` **is** artboard 08's `queue 3 of 7`,
+and it comes out ordered by `first_written` for free. Candidates are carried on
+the `Resolution` object and rendered at review time; nothing about state 4
+needs them persisted. There is no fifth migration in schema v4 and now nothing
+wants one.
+
+`checked 2026-08-24 09:12` on state 4 is `last_touched`, which a refusal
+stamps. No new column.
+
+**What a refusal does and does not do**
+
+A below-threshold match writes `gbif_confidence` **and nothing else**.
+`accepted_name` is untouched, `gbif_key` stays NULL, `status` stays `skeleton`
+— which is what keeps it in the queue. `matchType: NONE` comes back with
+`confidence: 100` from GBIF, and `is_a_match` refuses it regardless; there is a
+test for that, because trusting that number would be the silent-name-bug §4
+warns about.
+
+Two more deliberate limits:
+
+- **A lookup never overwrites what you typed.** `family` and `authority` fill
+  blanks only.
+- **Resolving a name does not move `status`.** A confirmed binomial says
+  nothing about how written the record is.
+- `--accept` takes a match below the threshold, because artboard 08 state 4
+  offers exactly that. A person deciding is not the machine guessing.
+
+**Same fixture caveat as session 08.** `api.gbif.org` is refused by the same
+policy (403 on CONNECT). `gbif_shape_high.json` uses the `usageKey 3190368`,
+family and authority **artboard 05 itself states**; `gbif_shape_low.json` uses
+the artboard's own `0.42` and three candidates, with `PLACEHOLDER` names
+because guessing at synonymy would be inventing botany. `fixtures/README.md`
+has the curl commands; the live test is marked `@pytest.mark.network`.
+
+**The plan has a hole: nothing resolves `wfo_id`**
+
+§3 names WFO alongside Crossref and GBIF, and invariant 2 says plainly *"Store
+the WFO-ID as well as the name — names change, IDs do not"*. `monograph.wfo_id`
+exists and artboard 05 displays it. **No session in §6 fills it.** Session 09 is
+GBIF only, and I have not quietly extended it.
+
+As things stand `wfo_id` is NULL for every record through v0.1, and artboard 05's
+identity strip renders a blank. That either needs a session or an explicit
+decision to ship without it. Raising, not answering.
+
+**Next session starts at:** BUILD.md §6, week 2, item **10** — `003_fts.sql`,
+FTS5 with sync triggers on insert, update **and** delete, and `ledger find`.
+That takes the schema to v4.
+
 ---
 
 ## Open questions
@@ -445,10 +509,19 @@ answer them alone.
   because this environment is policy-blocked from `api.crossref.org`. Replace it
   before v0.1 — `ledger/tests/fixtures/README.md` has the command.
 
+- **New (09):** *(raised, needs a decision)* no session in §6 resolves
+  `monograph.wfo_id`, but §3 names WFO and invariant 2 requires the ID. It will
+  be NULL for every record in v0.1 and artboard 05's identity strip will show a
+  blank. Allocate a session, or decide to ship without it.
+
 ---
 
 ## Plan health
 
 The §1 scope reckoning still holds as written: v0.1 is five screens, light
-theme only, monograph does not move. Session 01 revealed nothing that
-contradicts it.
+theme only, monograph does not move.
+
+One gap in §6 itself, found in session 09: **no session resolves `wfo_id`**,
+though §3 names WFO as an enrichment source and invariant 2 requires the
+identifier. Everything else in weeks 1–2 has landed where the plan said it
+would.

@@ -1,0 +1,35 @@
+{
+  "usageKey": 5000001,
+  "scientificName": "PLACEHOLDER CANDIDATE ONE",
+  "canonicalName": "PLACEHOLDER CANDIDATE ONE",
+  "rank": "SPECIES",
+  "status": "SYNONYM",
+  "confidence": 42,
+  "matchType": "FUZZY",
+  "family": "Fabaceae",
+  "synonym": true,
+  "alternatives": [
+    {
+      "usageKey": 5000002,
+      "scientificName": "PLACEHOLDER CANDIDATE TWO",
+      "canonicalName": "PLACEHOLDER CANDIDATE TWO",
+      "rank": "SPECIES",
+      "status": "ACCEPTED",
+      "confidence": 38,
+      "matchType": "FUZZY",
+      "family": "Fabaceae",
+      "synonym": false
+    },
+    {
+      "usageKey": 5000003,
+      "scientificName": "PLACEHOLDER CANDIDATE THREE",
+      "canonicalName": "PLACEHOLDER CANDIDATE THREE",
+      "rank": "SPECIES",
+      "status": "ACCEPTED",
+      "confidence": 31,
+      "matchType": "FUZZY",
+      "family": "Fabaceae",
+      "synonym": false
+    }
+  ]
+}
