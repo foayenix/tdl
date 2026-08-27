@@ -1306,6 +1306,39 @@ and safety sections with severity chips. `renderSection` already takes them;
 this session is two more `SectionSpec`s, the `severity` chooser, and
 `claim_columns` already names their columns.
 
+### session 25 — the constituent and safety sections, with severity chips
+
+**Landed**
+
+- `COLUMNS.constituent` and `COLUMNS.safety`, converted from artboard 05's
+  pixel widths and normalised.
+- Two more `SectionSpec`s. `renderSection` took them without changing.
+- `SEVERITY` in `evidence.ts`, and the safety section's severity **chooser** —
+  the same reasoning as `evidence` in session 24: three named values, and a
+  blank is not one of them.
+
+`just check` passes: 282 pytest, 56 cargo, tsc clean.
+
+**The section component paid for itself.** Two sections, no new component code:
+a spec each, one `cell` override for the severity chip, one `meta` for
+`1 critical`. That is what "three, then abstract" was waiting for — vernacular
+and indications were two, and these are three and four.
+
+**The InChIKey is monospace**, as §2 requires: every date, DOI, InChIKey,
+minute count and percentage. It is a column flag on the primitive, not a
+per-screen decision.
+
+**The safety heading names criticals, not counts of everything.** `3 · 1
+unsourced` when a row is unsourced, `3 · 1 critical` when one is critical, and
+just the count when neither. A safety section that buried a critical finding
+under a class list would be the wrong emphasis.
+
+**Next session starts at:** BUILD.md §6, week 5, item **26** — the prose
+sections: summary (74ch, `sources R1, R2, R6`, `rewritten <date>`), preparation
+(prose plus a field-note reference), and benefit-sharing (`agreement on file ·
+MTA-2025-014 · expires 2028-06`). Benefit-sharing is **not optional chrome**:
+it appears on every monograph, and its absence is already a corpus filter flag.
+
 ---
 
 ## Open questions

@@ -37,3 +37,7 @@ export function evidenceCode(level: Evidence): string {
 
 export const STATUSES = ["skeleton", "drafted", "sourced", "reviewed"] as const;
 export type Status = (typeof STATUSES)[number];
+
+/** Safety findings. Do not rename these values (BUILD.md §4). */
+export const SEVERITY = ["critical", "caution", "note"] as const;
+export type Severity = (typeof SEVERITY)[number];

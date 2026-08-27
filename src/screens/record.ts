@@ -4,8 +4,9 @@
 // product" (BUILD.md §1). This screen does not move.
 
 import { append, clear, el } from "../dom";
-import { evidenceChip, statusChip } from "../chips";
+import { evidenceChip, severityChip, statusChip } from "../chips";
 import { EVIDENCE, EVIDENCE_LABEL, evidenceCode, type Evidence } from "../evidence";
+import { SEVERITY } from "../evidence";
 import { claims, type Claim, type Record } from "../ledger";
 import { renderSection, type SectionSpec } from "./section";
 import { COLUMNS } from "../table";
@@ -192,6 +193,37 @@ const SECTIONS: SectionSpec[] = [
       const lowest = codes[0] ?? "";
       const highest = codes[codes.length - 1] ?? "";
       return lowest === highest ? lowest : `${lowest} → ${highest}`;
+    },
+  },
+  {
+    table: "constituent",
+    title: "constituents",
+    addLabel: "+ add compound",
+    columns: COLUMNS.constituent,
+    placeholders: ["compound", "class", "InChIKey"],
+    meta: (rows) => {
+      const classes = new Set(
+        rows.map((row) => row.cells[1]).filter((value): value is string => Boolean(value)),
+      );
+      return classes.size ? [...classes].sort().join(", ") : null;
+    },
+  },
+  {
+    table: "safety",
+    title: "safety",
+    addLabel: "+ add finding",
+    columns: COLUMNS.safety,
+    placeholders: ["kind", "finding", "severity"],
+    // `severity` is one of three named values, like `evidence`.
+    choices: { 2: SEVERITY },
+    cell: (claim, index) =>
+      index === 2 && claim.cells[2]
+        ? severityChip(claim.cells[2], "sm")
+        : (claim.cells[index] ?? ""),
+    meta: (rows) => {
+      const critical = rows.filter((row) => row.cells[2] === "critical").length;
+      // A critical finding is worth naming in the heading; the others are not.
+      return critical ? `${critical} critical` : null;
     },
   },
 ];

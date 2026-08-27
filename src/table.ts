@@ -175,6 +175,25 @@ export const COLUMNS = {
     { width: 25.0, label: "source" },
   ] as Column[],
 
+  // constituent — artboard 05, in pixels, converted to percentages of the
+  // record column and normalised to 100.
+  constituent: [
+    markerColumn(0.5),
+    { width: 22.0, label: "compound" },
+    { width: 15.3, label: "class" },
+    { width: 36.3, label: "inchikey", mono: true },
+    { width: 25.9, label: "source" },
+  ] as Column[],
+
+  // safety — the same, with the finding taking the flexible column.
+  safety: [
+    markerColumn(0.5),
+    { width: 15.0, label: "kind" },
+    { width: 47.1, label: "finding" },
+    { width: 11.5, label: "severity" },
+    { width: 25.9, label: "source" },
+  ] as Column[],
+
   // library — 752px inner
   library: [
     markerColumn(0.4),

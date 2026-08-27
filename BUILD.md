@@ -273,7 +273,7 @@ Thirty sessions. Tick each box as it lands.
 
 - [x] 23 · **Artboard 05** — header, identity strip, summary strip
 - [x] 24 · **Artboard 05** — vernacular + indication sections, inline add
-- [ ] 25 · **Artboard 05** — constituent + safety sections, severity chips
+- [x] 25 · **Artboard 05** — constituent + safety sections, severity chips
 - [ ] 26 · **Artboard 05** — prose sections: summary, preparation, benefit-sharing
 - [ ] 27 · **Artboard 05** — references section, sticky rail, the reviewed-status block
 
