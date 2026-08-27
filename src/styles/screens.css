@@ -1,0 +1,183 @@
+/* Screen scaffolding. Layout values are literal, from DESIGN.md §3. */
+
+.screen-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-14);
+  padding-bottom: var(--space-12);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.screen-head .board-title {
+  margin: 0;
+}
+
+.screen-head .micro-label {
+  color: var(--muted);
+}
+
+/* ── artboard 01 · specimens ────────────────────────────────────────── */
+
+.specimens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-28);
+  padding-top: var(--space-20);
+}
+
+.specimen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.specimen__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+  color: var(--muted);
+}
+
+.specimen__note {
+  color: var(--muted);
+}
+
+.specimen__dash {
+  color: var(--disabled-ink);
+}
+
+.state-grid {
+  display: grid;
+  grid-template-columns: 92px repeat(5, minmax(0, 1fr));
+  gap: var(--space-8) var(--space-12);
+  align-items: center;
+  padding: var(--space-12) var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.state-grid .micro-label {
+  color: var(--muted);
+}
+
+.state-grid__name {
+  color: var(--ink);
+}
+
+.state-grid__cell {
+  display: flex;
+  align-items: center;
+  min-height: var(--row-height);
+}
+
+.state-grid__cell > * {
+  max-width: 100%;
+}
+
+/* The nav item is 208px wide in the sidebar; the specimen shows it narrowed
+   so five states fit side by side. */
+.state-grid__cell .nav-item {
+  width: 116px;
+}
+
+.swatches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+  padding: var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.swatches__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.swatches__group > .micro-label {
+  color: var(--muted);
+}
+
+.swatches__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 104px;
+}
+
+.swatch__chip {
+  height: 34px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.swatch__name {
+  color: var(--muted);
+}
+
+.type-ramp {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: var(--space-14) var(--space-16);
+  align-items: baseline;
+  padding: var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.type-ramp__spec {
+  color: var(--muted);
+}
+
+.chip-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.chip-rows > .micro-label {
+  color: var(--muted);
+  padding-top: var(--space-6);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+  padding-bottom: var(--space-6);
+}
+
+/* ── app shell (the nav lands in session 15) ────────────────────────── */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  padding: var(--content-padding);
+}
+
+.app-footer {
+  padding: var(--space-8) var(--space-28);
+  border-top: 1px solid var(--hairline);
+  color: var(--muted);
+  background: var(--surface);
+}

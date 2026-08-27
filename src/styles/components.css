@@ -1,0 +1,438 @@
+/* The component specimens of artboard 01, with the five states DESIGN.md §4
+   specifies: default · hover · focus · selected · disabled. A dash in the
+   artboard means the state does not apply, and where it does not apply there
+   is no rule here.
+
+   Every value comes from a token. Nothing is derived.
+
+   Each hover and focus rule is written against both the live pseudo-class and
+   an `.is-hover` / `.is-focus` class. The artboard's specimen table renders all
+   five states at once, side by side, which a pointer cannot do — the classes
+   are how that page shows them. They are for artboard 01 and nothing else. */
+
+/* ── button · primary ───────────────────────────────────────────────── */
+
+.button {
+  font-family: var(--font-sans);
+  font-size: var(--size-button);
+  font-weight: 500;
+  line-height: 1.2;
+  padding: var(--space-7) var(--space-14);
+  border: 0;
+  border-radius: var(--radius-control);
+  color: #ffffff;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+:root[data-theme="dark"] .button {
+  color: var(--ink-on-accent);
+}
+
+.button:hover:not(:disabled),
+.button.is-hover {
+  background: var(--primary-hover);
+}
+
+.button:focus-visible,
+.button.is-focus {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+:root[data-theme="dark"] .button:focus-visible,
+.button.is-focus {
+  outline-color: var(--primary-focus-ring);
+}
+
+/* Primary has no selected state — a dash in the artboard. */
+
+.button:disabled {
+  color: var(--disabled-ink);
+  background: var(--disabled);
+  cursor: default;
+}
+
+/* The `build / AI` variant. `secondary` is the caution colour, and a button
+   that calls a model is exactly where caution belongs. */
+.button--secondary {
+  color: #ffffff;
+  background: var(--secondary);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background: var(--secondary);
+}
+
+/* ── button · quiet ─────────────────────────────────────────────────── */
+
+.button-quiet {
+  font-family: var(--font-sans);
+  font-size: var(--size-button-quiet);
+  font-weight: 500;
+  line-height: 1.2;
+  padding: var(--space-4) 10px;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+:root[data-theme="dark"] .button-quiet {
+  background: transparent;
+}
+
+.button-quiet:hover:not(:disabled),
+.button-quiet.is-hover {
+  color: var(--ink);
+  background: var(--ground);
+  border-color: var(--quiet-hover-border);
+}
+
+:root[data-theme="dark"] .button-quiet:hover:not(:disabled),
+.button-quiet.is-hover {
+  background: var(--row-hover);
+}
+
+.button-quiet:focus-visible,
+.button-quiet.is-focus {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.button-quiet[aria-pressed="true"],
+.button-quiet.is-selected {
+  color: var(--primary);
+  background: var(--primary-wash);
+  border-color: var(--primary-ring);
+}
+
+.button-quiet:disabled {
+  color: var(--disabled-ink);
+  border-color: var(--disabled);
+  cursor: default;
+}
+
+:root[data-theme="dark"] .button-quiet:disabled {
+  border-color: var(--quiet-disabled-border);
+}
+
+/* ── nav item ───────────────────────────────────────────────────────── */
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: 3px var(--space-8);
+  border: 0;
+  border-left: var(--nav-bar-width) solid transparent;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-item__label {
+  font-family: var(--font-sans);
+  font-size: var(--size-nav-item);
+  color: var(--ink);
+}
+
+.nav-item__count {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-item:hover:not(:disabled),
+.nav-item.is-hover {
+  background: var(--row-hover);
+}
+
+.nav-item:focus-visible,
+.nav-item.is-focus {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.nav-item.is-selected {
+  background: var(--primary-wash);
+  border-left-color: var(--primary);
+}
+
+.nav-item.is-selected .nav-item__label {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.nav-item.is-selected .nav-item__count {
+  color: var(--primary);
+}
+
+.nav-item:disabled {
+  cursor: default;
+}
+
+.nav-item:disabled .nav-item__label,
+.nav-item:disabled .nav-item__count {
+  color: var(--disabled-ink);
+}
+
+/* ── checkbox ───────────────────────────────────────────────────────── */
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  cursor: pointer;
+}
+
+.checkbox__box {
+  width: var(--checkbox-box);
+  height: var(--checkbox-box);
+  flex: none;
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-checkbox);
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .checkbox__box {
+  background: transparent;
+}
+
+.checkbox__label {
+  font-family: var(--font-sans);
+  font-size: var(--size-checkbox-label);
+  color: var(--muted);
+}
+
+.checkbox:hover .checkbox__box,
+.checkbox.is-hover .checkbox__box {
+  border-color: var(--checkbox-hover-ring);
+}
+
+.checkbox:hover .checkbox__label,
+.checkbox.is-hover .checkbox__label {
+  color: var(--ink);
+}
+
+.checkbox input:focus-visible + .checkbox__box,
+.checkbox.is-focus .checkbox__box {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.checkbox.is-checked .checkbox__box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.checkbox.is-checked .checkbox__label {
+  color: var(--ink);
+}
+
+.checkbox.is-disabled {
+  cursor: default;
+}
+
+.checkbox.is-disabled .checkbox__box {
+  background: var(--disabled);
+  border-color: var(--disabled);
+}
+
+.checkbox.is-disabled .checkbox__label {
+  color: var(--disabled-ink);
+}
+
+/* ── keycap ─────────────────────────────────────────────────────────── */
+/* No hover state — a dash in the artboard. */
+
+.keycap {
+  display: inline-block;
+  width: var(--keycap-width);
+  padding: var(--space-4) 0 5px;
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  line-height: 1;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: var(--radius-chip);
+}
+
+.keycap:focus-visible,
+.keycap.is-focus {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The polarity flip: white on the dark accent, near-black on the bright one. */
+.keycap.is-selected {
+  color: #ffffff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+:root[data-theme="dark"] .keycap.is-selected {
+  color: var(--ink-on-accent);
+}
+
+.keycap.is-disabled {
+  color: var(--disabled-ink);
+  background: var(--disabled);
+  border-color: var(--disabled);
+}
+
+/* ── chips (DESIGN.md §5) ───────────────────────────────────────────── */
+
+.chip {
+  display: inline-block;
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--radius-chip);
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: var(--size-emphasis);
+  font-weight: 500;
+  line-height: var(--leading-emphasis);
+  white-space: nowrap;
+}
+
+.chip--status-skeleton {
+  background: var(--status-skeleton-bg);
+  color: var(--status-skeleton-fg);
+  border-color: var(--status-skeleton-ring);
+}
+.chip--status-drafted {
+  background: var(--status-drafted-bg);
+  color: var(--status-drafted-fg);
+  border-color: var(--status-drafted-ring);
+}
+.chip--status-sourced {
+  background: var(--status-sourced-bg);
+  color: var(--status-sourced-fg);
+  border-color: var(--status-sourced-ring);
+}
+.chip--status-reviewed {
+  background: var(--status-reviewed-bg);
+  color: var(--status-reviewed-fg);
+  border-color: var(--status-reviewed-ring);
+}
+
+/* Six levels, four steps. The code sits beside the colour so the exact
+   level stays recoverable. */
+.chip--ev0 {
+  background: var(--ev0-bg);
+  color: var(--ev0-fg);
+  border-color: var(--ev0-ring);
+}
+.chip--ev1 {
+  background: var(--ev1-bg);
+  color: var(--ev1-fg);
+  border-color: var(--ev1-ring);
+}
+.chip--ev2 {
+  background: var(--ev2-bg);
+  color: var(--ev2-fg);
+  border-color: var(--ev2-ring);
+}
+.chip--ev3 {
+  background: var(--ev3-bg);
+  color: var(--ev3-fg);
+  border-color: var(--ev3-ring);
+}
+
+.chip__code {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  letter-spacing: var(--track-micro-label);
+}
+
+.chip--severity-critical {
+  background: var(--severity-critical-bg);
+  color: var(--severity-critical-fg);
+  border-color: var(--severity-critical-ring);
+}
+.chip--severity-caution {
+  background: var(--severity-caution-bg);
+  color: var(--severity-caution-fg);
+  border-color: var(--severity-caution-ring);
+}
+.chip--severity-note {
+  background: var(--severity-note-bg);
+  color: var(--severity-note-fg);
+  border-color: var(--severity-note-ring);
+}
+
+.chip--read-read {
+  background: var(--read-read-bg);
+  color: var(--read-read-fg);
+  border-color: var(--read-read-ring);
+}
+.chip--read-reading {
+  background: var(--read-reading-bg);
+  color: var(--read-reading-fg);
+  border-color: var(--read-reading-ring);
+}
+.chip--read-queued {
+  background: var(--read-queued-bg);
+  color: var(--read-queued-fg);
+  border-color: var(--read-queued-ring);
+}
+
+/* Output kind is a colour on the word itself, not a filled chip. */
+.kind {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  letter-spacing: var(--track-micro-label);
+  text-transform: uppercase;
+}
+.kind--paper {
+  color: var(--kind-paper);
+}
+.kind--talk {
+  color: var(--kind-talk);
+}
+.kind--long-form {
+  color: var(--kind-long-form);
+}
+.kind--release {
+  color: var(--kind-release);
+}
+.kind--note {
+  color: var(--kind-note);
+}
+
+/* ── text input (artboard 01) ───────────────────────────────────────── */
+
+.field {
+  font-family: var(--font-mono);
+  font-size: var(--size-numeric);
+  color: var(--ink);
+  background: var(--inset);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  padding: var(--space-7) 10px;
+}
+
+.field:hover:not(:disabled),
+.field.is-hover {
+  border-color: var(--quiet-hover-border);
+}
+
+.field:focus-visible,
+.field.is-focus {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+  border-color: var(--primary-ring);
+}
+
+.field:disabled {
+  color: var(--disabled-ink);
+  background: var(--disabled);
+  border-color: var(--disabled);
+}

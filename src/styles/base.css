@@ -3,6 +3,8 @@
 
 @import "./fonts.css";
 @import "./tokens.css";
+@import "./components.css";
+@import "./screens.css";
 
 *,
 *::before,

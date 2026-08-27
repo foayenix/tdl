@@ -134,15 +134,21 @@ Padding `4px 10px`, radius 4, Plex Sans 11.5 / 500.
 
 ### Nav item
 
-Label Plex Sans 12.5, count Plex Mono 10. Default and hover use `ink`; hover adds `row-hover` behind. **Selected turns both label and count `primary`** — it does not add a fill or a bar. Disabled is `disabled-ink`.
+Label Plex Sans 12.5, count Plex Mono 10. Default: label `ink`, count `muted`; hover adds `row-hover` behind. **Selected turns both label and count `primary`, adds a `primary-wash` fill and a 2px `primary` bar on the leading edge, and sets the label to weight 500.** Radius `0 4px 4px 0`, padding `3px 8px`. Disabled is `disabled-ink`.
+
+> Corrected in session 14. This file previously read "it does not add a fill or a bar", and gave the default count as `ink`. Artboard 10's specimen row and artboard 02's real left nav both show the fill, the bar and the muted count. The artboards win.
 
 ### Checkbox
 
-12px box, radius 2. Off: `surface` fill, `outline` ring, label `muted`. On: `primary` fill, `primary` ring, label `ink`. Disabled: label `disabled-ink`.
+**11px** box, radius 2. Off: `surface` fill, `outline` ring, label `muted`. Hover keeps the fill and darkens the ring to `#8A938D` light / `#7A8781` dark. On: `primary` fill, `primary` ring, label `ink`. Disabled: `disabled` fill and ring, label `disabled-ink`. Label is Plex Sans 12.
+
+> Corrected in session 14: this file said 12px; both artboard specimens are 11px. The hover ring was not recorded here at all.
 
 ### Keycap
 
-Plex Mono 9.5, radius 3, padding `4px 0 5px`, fixed width. Default `fg muted / bg surface / border outline`. Selected inverts to `primary` fill with near-black text. Disabled uses `disabled` fill. No hover state.
+Plex Mono 9.5, radius 3, padding `4px 0 5px`, width **17px**. Default `fg muted / bg surface / border outline`. Selected inverts to a `primary` fill: **`#FFFFFF` text in light, `#08150F` in dark**. Disabled uses `disabled` fill and ring with `disabled-ink` text. Focus is the standard ring. No hover state.
+
+> Corrected in session 14: this file said "near-black text" for both themes. That is the dark theme only — the light artboard is white on `#14705B`. It is the same polarity flip the evidence ramp makes at step 3, and it only applies where the accent is bright.
 
 ---
 

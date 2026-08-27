@@ -32,6 +32,7 @@
   /* Chosen values that DESIGN.md names outside the token table. */
   --primary-hover: #0f5947;
   --quiet-hover-border: #d2d6d0;
+  --checkbox-hover-ring: #8a938d;
   --critical-wash: #f6e4e1;
   --critical-ring: #e8c9c3;
   --scrim: rgba(14, 21, 18, 0.62);
@@ -111,6 +112,15 @@
   --size-micro-label: 9.5px;
   --size-numeric: 11.5px;
   --size-display-num: 44px;
+
+  /* Component sizes, from DESIGN.md §4 rather than §2's role table. */
+  --size-button: 12.5px;
+  --size-button-quiet: 11.5px;
+  --size-nav-item: 12.5px;
+  --size-checkbox-label: 12px;
+  --checkbox-box: 11px;
+  --keycap-width: 17px;
+  --nav-bar-width: 2px;
 
   --leading-board-title: 1.15;
   --leading-record-name: 1.1;
@@ -206,6 +216,8 @@
   --primary-hover: #6fd9b7;
   --primary-focus-ring: #9be8ce;
   --quiet-hover-border: #5b6661;
+  --checkbox-hover-ring: #7a8781;
+  --quiet-disabled-border: #1e2622;
 
   --status-skeleton-bg: #1c2422;
   --status-skeleton-fg: #9aa79f;

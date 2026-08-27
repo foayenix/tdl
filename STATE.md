@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 3, shell and components — item 14 next.
+**Now:** week 3, shell and components — item 15 next.
 
 ---
 
@@ -730,6 +730,68 @@ means a line in DESIGN.md §2 first.
 component specimens with all five states (§4 of DESIGN.md): buttons primary and
 quiet, nav item, checkbox, keycap. A dash in the artboard means the state does
 not apply.
+
+### session 14 — artboard 01's component specimens, all five states
+
+**Landed**
+
+- `src/styles/components.css` — button primary, button quiet, the `secondary`
+  "Draft with model" variant, nav item, checkbox, keycap, the text field, and
+  every chip family in DESIGN.md §5.
+- `src/dom.ts` — `el`, `append`, `clear`, `binomial`. Four helpers; that is the
+  whole of the vanilla-DOM decision made in session 12.
+- `src/screens/system.ts` — artboard 01 rendered live from the CSS variables:
+  colour swatches, the type ramp, the state grids, the chips.
+- `src/styles/screens.css` — the specimen layout and the app shell.
+
+`just check` passes: 281 pytest, 6 cargo, tsc clean.
+
+**Screenshot compared against artboard 01 — §7's manual check**
+
+Every difference, and what was done about it:
+
+| difference | resolution |
+|---|---|
+| Hover and focus columns first rendered as *default* — a pointer can only be in one place, so a live `:hover` cannot fill a specimen table | **Fixed.** Every hover/focus rule is now written against both the pseudo-class and an `.is-hover` / `.is-focus` class. The artboard shows all five states at once and now so does the screen. The classes are for artboard 01 and nothing else, and the comment in `components.css` says so. |
+| Type-ramp spec column wrapped `PLEX MONO 400 / 10 · .14EM` onto two lines | **Fixed** — column widened 168 → 196px. |
+| Artboard's right-hand caption reads `8px grid · 4px radius max · hairline #DEE1DB` | **Deliberately omitted.** DESIGN.md §3 states that caption is wrong: the real scale includes 6, 7, 14 and 18. Rendering it would put a known-false statement on the screen, and rewriting it would be inventing copy. |
+| Artboard 01 also carries `table row — monograph`, `reference row` and `output card` specimens | **Deferred, not dropped.** The table primitive is session 16, the reference row session 27, the output card session 29. They will be added to this screen as they land. |
+| The footer shows a raw `TypeError … reading 'invoke'` in a plain browser | **Correct, not a bug.** `invoke` only exists inside the Tauri window. The screenshot was taken from `vite preview`; in the app the footer reads the path, size and schema. The error path is the same one artboard 08 state 1 needs. |
+
+Everything else matched: all three families render from the local woff2, the
+binomial is italic with the authority upright, the evidence ramp collapses six
+levels onto four steps with the polarity flip at E5/E6, and the nav item's
+selected state carries the fill, the bar, the 500-weight label and the primary
+count.
+
+**DESIGN.md was wrong in three places. I have amended it, as §5 of that file
+instructs — the artboards win, fix the file, note it here.**
+
+1. **Nav item.** DESIGN.md said "Selected turns both label and count `primary`
+   — **it does not add a fill or a bar**". Both artboard 10's specimen row and
+   artboard 02's real left nav add a `primary-wash` fill **and** a 2px `primary`
+   left bar, and set the label to weight 500. It also gave the default count as
+   `ink`; the artboards use `muted`.
+2. **Checkbox.** DESIGN.md said 12px; both artboards are **11px**. The hover
+   ring (`#8A938D` light, `#7A8781` dark) was not recorded in DESIGN.md at all —
+   it is now, which is also what lets the token test keep passing.
+3. **Keycap.** DESIGN.md said selected "inverts to `primary` fill with
+   near-black text". That is the **dark theme only** — the light artboard is
+   `#FFFFFF` on `#14705B`. It is the same polarity flip the evidence ramp makes
+   at step 3: near-black text belongs where the accent is bright.
+
+Each amendment carries a `> Corrected in session 14` note in DESIGN.md itself,
+so the next reader sees why the file changed.
+
+**Artboard 01's species are used here and only here.** §8 permits it in exactly
+these words: "design fixtures for artboard 01 only — never seed data". Nothing
+in the specimen screen touches the database.
+
+**Next session starts at:** BUILD.md §6, week 3, item **15** — the left nav
+with live counts and the real footer (path, size, last write). The nav item
+component is built; session 15 is the sidebar around it, the section labels
+(`ledger` / `catalogue` / `public` / `system`, Plex Mono 9 · .14em in the
+artboard — another size §2 does not list), and Rust commands for the counts.
 
 ---
 
