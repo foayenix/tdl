@@ -1,0 +1,148 @@
+/* The type roles and the ground everything sits on. Values come from
+   tokens.css and nowhere else. */
+
+@import "./fonts.css";
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* No box-shadows anywhere. No gradients. Depth is hairlines and
+   ground/surface contrast only (DESIGN.md §3). */
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+::selection {
+  background: var(--primary-wash);
+}
+
+/* ── type roles (DESIGN.md §2) ──────────────────────────────────────── */
+
+.board-title {
+  font-family: var(--font-display);
+  font-size: var(--size-board-title);
+  font-weight: 600;
+  line-height: var(--leading-board-title);
+  letter-spacing: var(--track-board-title);
+}
+
+/* A monograph's title is a binomial, so the role bakes the italic in. */
+.record-name {
+  font-family: var(--font-display);
+  font-size: var(--size-record-name);
+  font-weight: 600;
+  font-style: italic;
+  line-height: var(--leading-record-name);
+  letter-spacing: var(--track-record-name);
+}
+
+.section-head {
+  font-family: var(--font-display);
+  font-size: var(--size-section-head);
+  font-weight: 600;
+  line-height: var(--leading-section-head);
+  letter-spacing: var(--track-section-head);
+}
+
+.body {
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
+}
+
+.table-cell {
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell);
+  font-weight: 400;
+  line-height: var(--leading-table-cell);
+}
+
+.table-cell-sm {
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell-sm);
+  font-weight: 400;
+  line-height: var(--leading-table-cell);
+}
+
+.emphasis {
+  font-family: var(--font-sans);
+  font-size: var(--size-emphasis);
+  font-weight: 500;
+  line-height: var(--leading-emphasis);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.micro-label {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: var(--track-micro-label);
+  text-transform: uppercase;
+}
+
+/* Every date, DOI, InChIKey, minute count and percentage. */
+.numeric {
+  font-family: var(--font-mono);
+  font-size: var(--size-numeric);
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.display-num {
+  font-family: var(--font-mono);
+  font-size: var(--size-display-num);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: var(--track-display-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Botanical names are always italic. The authority string never is. */
+.binomial {
+  font-style: italic;
+}
+
+.authority {
+  font-style: normal;
+}

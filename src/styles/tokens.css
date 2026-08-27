@@ -1,0 +1,235 @@
+/* Every value here is transcribed from DESIGN.md, which is transcribed from
+   artboard 10. Values are literal · no derivation at runtime.
+
+   Do not compute a shade. Do not tint programmatically. Do not run a colour
+   through an opacity. If a value you need is not here, it has not been chosen
+   yet — go and choose it in DESIGN.md first (DESIGN.md §1, §8 guardrails). */
+
+:root {
+  /* ── colour · light (DESIGN.md §1) ───────────────────────────────── */
+  --ground: #f7f7f4;
+  --surface: #ffffff;
+  --inset: #f7f7f4;
+  --zebra: #fcfcfa;
+  --row-focus: #fbfbf9;
+  --row-hover: #f2f4f1;
+  --ink: #16211d;
+  --muted: #5e6b65;
+  --hairline: #dee1db;
+  --outline: #dee1db;
+  --primary: #14705b;
+  --primary-wash: #e6f0ec;
+  --primary-ring: #c9e0d8;
+  --secondary: #a8681f;
+  --secondary-wash: #f5ebdd;
+  --secondary-ring: #e8d6bc;
+  --positive: #2f7d4f;
+  --critical: #a33a2e;
+  --warn-row: #fdf6ec;
+  --disabled: #edefea;
+  --disabled-ink: #b4bbb6;
+
+  /* Chosen values that DESIGN.md names outside the token table. */
+  --primary-hover: #0f5947;
+  --quiet-hover-border: #d2d6d0;
+  --critical-wash: #f6e4e1;
+  --critical-ring: #e8c9c3;
+  --scrim: rgba(14, 21, 18, 0.62);
+
+  /* ── status pills (DESIGN.md §5) ─────────────────────────────────── */
+  --status-skeleton-bg: #efefea;
+  --status-skeleton-fg: #5e6b65;
+  --status-skeleton-ring: #dee1db;
+  --status-drafted-bg: #f5ebdd;
+  --status-drafted-fg: #a8681f;
+  --status-drafted-ring: #e8d6bc;
+  --status-sourced-bg: #e6f0ec;
+  --status-sourced-fg: #14705b;
+  --status-sourced-ring: #c9e0d8;
+  --status-reviewed-bg: #14705b;
+  --status-reviewed-fg: #ffffff;
+  --status-reviewed-ring: #14705b;
+
+  /* ── evidence · six levels on a four-step ramp (DESIGN.md §5) ────── */
+  /* Polarity flips at step 3 — that flip is what makes the top of the
+     range read as arrival. */
+  --ev0-bg: #e6f0ec;
+  --ev0-fg: #14705b;
+  --ev0-ring: #c9e0d8;
+  --ev1-bg: #bfdcd2;
+  --ev1-fg: #14705b;
+  --ev1-ring: #a9ccc1;
+  --ev2-bg: #4f9683;
+  --ev2-fg: #ffffff;
+  --ev2-ring: #4f9683;
+  --ev3-bg: #14705b;
+  --ev3-fg: #ffffff;
+  --ev3-ring: #14705b;
+
+  /* ── severity (DESIGN.md §5) ─────────────────────────────────────── */
+  --severity-critical-bg: #f6e4e1;
+  --severity-critical-fg: #a33a2e;
+  --severity-critical-ring: #e8c9c3;
+  --severity-caution-bg: #f5ebdd;
+  --severity-caution-fg: #a8681f;
+  --severity-caution-ring: #e8d6bc;
+  --severity-note-bg: #efefea;
+  --severity-note-fg: #5e6b65;
+  --severity-note-ring: #dee1db;
+
+  /* ── reading state (DESIGN.md §5) ────────────────────────────────── */
+  --read-read-bg: #e6f0ec;
+  --read-read-fg: #14705b;
+  --read-read-ring: #c9e0d8;
+  --read-reading-bg: #f5ebdd;
+  --read-reading-fg: #a8681f;
+  --read-reading-ring: #e8d6bc;
+  --read-queued-bg: #efefea;
+  --read-queued-fg: #5e6b65;
+  --read-queued-ring: #dee1db;
+
+  /* ── output kind (DESIGN.md §5) ──────────────────────────────────── */
+  --kind-paper: #14705b;
+  --kind-talk: #16211d;
+  --kind-long-form: #a8681f;
+  --kind-release: #a8681f;
+  --kind-note: #5e6b65;
+
+  /* ── type (DESIGN.md §2) ─────────────────────────────────────────── */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --size-board-title: 22px;
+  --size-record-name: 26px;
+  --size-section-head: 17px;
+  --size-body: 13.5px;
+  --size-table-cell: 13px;
+  --size-table-cell-sm: 12.5px;
+  --size-emphasis: 12px;
+  --size-label: 10px;
+  --size-micro-label: 9.5px;
+  --size-numeric: 11.5px;
+  --size-display-num: 44px;
+
+  --leading-board-title: 1.15;
+  --leading-record-name: 1.1;
+  --leading-section-head: 1.2;
+  --leading-body: 1.6;
+  --leading-table-cell: 1.35;
+  --leading-emphasis: 1.45;
+
+  --track-board-title: -0.01em;
+  --track-record-name: -0.015em;
+  --track-section-head: -0.01em;
+  --track-label: 0.14em;
+  --track-micro-label: 0.12em;
+  --track-display-num: -0.02em;
+
+  /* ── spacing (DESIGN.md §3) ──────────────────────────────────────── */
+  /* The four load-bearing steps are 12, 14, 16, 28; reach for those first.
+     Artboard 01's "8px grid" caption is wrong — the real scale includes
+     6, 7, 14 and 18. Do not force values onto an 8px grid. */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-7: 7px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-18: 18px;
+  --space-20: 20px;
+  --space-28: 28px;
+  --space-40: 40px;
+
+  /* ── radius (DESIGN.md §3) — and nothing else ────────────────────── */
+  --radius-checkbox: 2px;
+  --radius-chip: 3px;
+  --radius-control: 4px;
+  --radius-overlay: 5px;
+
+  /* ── layout (DESIGN.md §3) ───────────────────────────────────────── */
+  --row-height: 33px;
+  --row-height-compact: 26px;
+  --row-padding: 7px 16px;
+  --row-padding-compact: 4px 16px;
+  --table-head-height: 30px;
+  --sidebar-width: 208px;
+  --filter-rail-width: 208px;
+  --library-detail-rail-width: 384px;
+  --record-rail-width: 224px;
+  --content-padding: 18px 28px;
+  --prose-max-width: 74ch;
+  --overlay-width: 772px;
+  --overlay-top: 104px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 1px;
+}
+
+/* ── colour · dark (DESIGN.md §1) ──────────────────────────────────────
+   Rebuilt against #0F1412, not inverted. The artboard says so explicitly.
+   Never generate one theme from the other.
+
+   v0.1 is light only (BUILD.md §1). These are transcribed now so the tokens
+   exist in one place and session 28's dark work is a class flip, not a hunt
+   through DESIGN.md. Nothing switches them on yet. */
+:root[data-theme="dark"] {
+  --ground: #0f1412;
+  --surface: #161d1a;
+  --inset: #0f1412;
+  --zebra: #191f1c;
+  --row-focus: #1a2320;
+  --row-hover: #1c2422;
+  --ink: #e9ede8;
+  --muted: #9aa79f;
+  --hairline: #252e2a;
+  --outline: #48544e;
+  --primary: #57c4a4;
+  --primary-wash: #122a24;
+  --primary-ring: #1e4438;
+  --secondary: #dfa65c;
+  --secondary-wash: #2a2015;
+  --secondary-ring: #40311d;
+  --positive: #5fbf7e;
+  --critical: #e2705f;
+  --warn-row: #1f1a12;
+  --disabled: #1c2422;
+  --disabled-ink: #5b6661;
+
+  /* Dark-only supporting values. The theme flips polarity at the top of the
+     accent range, so text on a bright green sits near-black. */
+  --rule2: #3e4b45;
+  --critical-wash: #2a1614;
+  --critical-ring: #45211c;
+  --ink-on-accent: #08150f;
+  --primary-hover: #6fd9b7;
+  --primary-focus-ring: #9be8ce;
+  --quiet-hover-border: #5b6661;
+
+  --status-skeleton-bg: #1c2422;
+  --status-skeleton-fg: #9aa79f;
+  --status-skeleton-ring: #252e2a;
+  --status-drafted-bg: #2a2015;
+  --status-drafted-fg: #dfa65c;
+  --status-drafted-ring: #40311d;
+  --status-sourced-bg: #122a24;
+  --status-sourced-fg: #57c4a4;
+  --status-sourced-ring: #1e4438;
+  --status-reviewed-bg: #57c4a4;
+  --status-reviewed-fg: #08150f;
+  --status-reviewed-ring: #57c4a4;
+
+  --ev0-bg: #16211e;
+  --ev0-fg: #8fb8aa;
+  --ev0-ring: #2a3831;
+  --ev1-bg: #17352c;
+  --ev1-fg: #5fd3b0;
+  --ev1-ring: #2b5a4b;
+  --ev2-bg: #2e7d66;
+  --ev2-fg: #eaf6f1;
+  --ev2-ring: #3e9c80;
+  --ev3-bg: #6fd9b7;
+  --ev3-fg: #08150f;
+  --ev3-ring: #6fd9b7;
+}

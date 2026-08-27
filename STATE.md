@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 3, shell and components — item 13 next.
+**Now:** week 3, shell and components — item 14 next.
 
 ---
 
@@ -668,6 +668,68 @@ every token in `DESIGN.md` §1 as a CSS variable, fonts self-hosted as woff2 in
 Fonts, which this container is policy-blocked from** — expect the same
 situation as Crossref and GBIF, and expect to have to check whether the font
 files can be obtained at all before writing CSS against them.
+
+### session 13 — every token is a CSS variable, and DESIGN.md is now executable
+
+**Landed**
+
+- `src/styles/tokens.css` — **every** value in DESIGN.md §1, §2, §3 and §5 as a
+  custom property. Both themes, transcribed literally, nothing computed.
+- `src/styles/fonts.css` — 14 `@font-face` declarations, all local.
+- `src/fonts/` — the woff2 files, both licences, and a README saying which cuts
+  are here and why.
+- `src/styles/base.css` — the eleven type roles from §2 as classes, plus
+  `.binomial` / `.authority`, the focus ring, and the ground.
+- `ledger/tests/test_design_tokens.py` — 37 tests.
+
+`just check` passes: 279 pytest, 6 cargo, tsc clean.
+
+**The token test is the point of this session**
+
+It reads `DESIGN.md` and `tokens.css` and compares them:
+
+- every row of §1's table is declared, in **both** themes, with exactly the hex
+  it states;
+- **every hex in `tokens.css` appears somewhere in `DESIGN.md`** — this is the
+  "do not derive a colour" guardrail as an assertion, and it fails on an
+  invented value rather than on review;
+- no `lighten(`, `darken(`, `color-mix(`, `filter:` or `invert(` in either
+  block, so the dark theme cannot quietly become a computed one;
+- the radius scale is exactly {2, 3, 4, 5};
+- the spacing scale is the twelve steps §3 lists, and 6, 7, 14, 18 are asserted
+  present — artboard 01's "8px grid" caption is wrong and this stops anyone
+  acting on it;
+- no `box-shadow`, no `gradient(` in any stylesheet.
+
+It caught its own author immediately: the first run failed because `base.css`
+carries a comment reading "No box-shadows anywhere". Comments are stripped now.
+
+**The dark tokens are transcribed although v0.1 is light only**
+
+They are inert — nothing sets `data-theme` — but keeping both halves of §1 in
+one file means session 28's dark work is a class flip rather than a second trip
+through DESIGN.md, and it lets the test check both columns of the table now,
+while the transcription is fresh. This is transcription, not implementation;
+§1's freeze on dark theme is intact.
+
+**Fonts: obtainable after all**
+
+Google Fonts is policy-blocked here, like Crossref and GBIF. The families are
+all SIL OFL and the `@fontsource` npm packages redistribute the upstream
+releases, and **npm is reachable** — so the woff2 files were vendored from
+there and checked in. `@fontsource` is **not** a dependency; the files are in
+the tree, which is what self-hosted means.
+
+Only the cuts §2 actually asks for: Fraunces 600 normal and italic; Plex Sans
+400, 500, 600 and 400 italic; Plex Mono 400. `latin` **and** `latin-ext` for
+each — `latin-ext` is not optional here, because vernacular names and authority
+strings carry diacritics that plain `latin` drops. 296 KB in total. Adding a cut
+means a line in DESIGN.md §2 first.
+
+**Next session starts at:** BUILD.md §6, week 3, item **14** — artboard 01's
+component specimens with all five states (§4 of DESIGN.md): buttons primary and
+quiet, nav item, checkbox, keycap. A dash in the artboard means the state does
+not apply.
 
 ---
 
