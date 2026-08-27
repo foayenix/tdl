@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
+from .commands import find as find_command
 from .commands import link as link_command
 from .commands import log as log_command
 from .commands import migrate as migrate_command
@@ -44,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command", metavar="command")
 
-    # Registered as sessions land them: find (10), inbox.
+    # Registered as sessions land them: inbox.
     migrate_command.register(subparsers)
     log_command.register(subparsers)
     mono_command.register(subparsers)
@@ -53,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     seed_command.register(subparsers)
     ref_command.register(subparsers)
     resolve_command.register(subparsers)
+    find_command.register(subparsers)
 
     return parser
 

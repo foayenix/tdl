@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 2, the corpus in the database.
+**Now:** week 2, the corpus in the database — item 11 next.
 
 ---
 
@@ -464,6 +464,74 @@ decision to ship without it. Raising, not answering.
 **Next session starts at:** BUILD.md §6, week 2, item **10** — `003_fts.sql`,
 FTS5 with sync triggers on insert, update **and** delete, and `ledger find`.
 That takes the schema to v4.
+
+### session 10 — schema v4: FTS5, its sync triggers, and `ledger find`
+
+**Landed**
+
+- `schema/003_fts.sql` → **`user_version = 4`**, the version artboard 08's
+  footer shows. One `search` virtual table, 22 triggers, and a backfill so the
+  migration works on a database that already has records.
+- `ledger/find.py` — `find()`, `to_match()`, `nearest()`, `corpus_size()`.
+- `ledger find QUERY [--limit] [--json]`, printing artboard 08 state 6's line
+  word for word when nothing matches, with the nearest name and its edit
+  distance.
+- 31 tests here, and §7 test 3's FTS half is now real.
+
+`just check` passes: ruff clean, 233 green, 2 deselected (network).
+
+**Claim rows are indexed as themselves**
+
+`search` carries `kind`, `row_id` and `monograph_id`. An indication, a
+vernacular name, a compound or a safety finding is its own row pointing back at
+its plant. The alternative — folding claim text into the monograph's index
+entry — means rebuilding that entry every time any claim changes, and 22 simple
+triggers are easier to be sure of than 7 clever ones. `Results.monograph_ids`
+folds the hits back onto plants, so one plant hit through three claims is
+listed once.
+
+`ledger find "antimalarial bark"` therefore works, which it would not have if
+only monograph prose were indexed.
+
+**The delete half, which is the half that rots**
+
+Every indexed table has insert, update **and** delete triggers, and each has its
+own test. One extra: `ON DELETE CASCADE` does **not** fire per-row delete
+triggers unless `recursive_triggers` is on, and that pragma is per-connection —
+so deleting a record would have left its claim rows in the index for any
+connection that forgot it. `search_monograph_sweep` clears them at the record
+level instead, where it holds however the caller opened the database. There is
+a test that deletes a record with two claims and asserts the index is empty.
+
+**Query text is quoted, never parsed**
+
+`to_match()` tokenises and quotes: `bark"`, `10.1016/j.jep`, `NEAR(a b)` and
+`a OR b` are searched for, not executed as FTS5 syntax. Tokenizer is
+`unicode61 remove_diacritics 2`, so `cailcedrat` finds `caïlcédrat`.
+
+**Second bug in the dump, same test caught it**
+
+FTS5's shadow tables (`search_data`, `search_idx`, …) come into existence with
+`CREATE VIRTUAL TABLE`; replaying their own `CREATE TABLE` statements fails, and
+dumping their contents would double-write the index.
+
+`ledger/dump.py` now excludes every virtual table and its shadows, keeping only
+the `CREATE VIRTUAL TABLE` statement — **the index is derived data and the dump
+holds truth.** `restore()` rebuilds it by running a no-op `UPDATE t SET id = id`
+over each indexed table, which fires the sync triggers. That deliberately
+avoids restating the trigger bodies in Python: two definitions of "indexed"
+would drift, and the triggers are the one that matters.
+
+**Week 2 is complete.** The corpus is in the database and every §7 test that
+does not need the Rust core exists: 1 (dump round-trip), 3 (migration ladder,
+now reaching v4 with FTS triggers), 4 (sourcing), 5 (name resolution),
+6 (Crossref, with the fixture caveat), 7 (streak), 8 (gap queries). Only
+**§7 test 2, concurrent access**, is outstanding — it needs the Rust side, so
+it belongs to session 12.
+
+**Next session starts at:** BUILD.md §6, week 2, item **11** — `just dump` + a
+pre-commit hook, and the restore-from-any-commit test. Sessions 06 and 10 have
+already decided what `just dump` must call; this session is the plumbing.
 
 ---
 

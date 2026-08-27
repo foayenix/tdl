@@ -51,6 +51,13 @@ def test_000_init_creates_the_four_tables(migrated):
     assert {"entry", "monograph", "reference", "output"} <= table_names(migrated)
 
 
+def test_the_ladder_ends_at_the_schema_version_the_artboards_show(migrated):
+    """Artboard 08's footer reads `schema v4`."""
+    from ledger import SCHEMA_VERSION
+
+    assert user_version(migrated) == SCHEMA_VERSION == 4
+
+
 def test_pragmas_are_set_on_every_connection(db_path):
     conn = connect(db_path)
     try:

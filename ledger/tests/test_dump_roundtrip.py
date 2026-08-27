@@ -12,16 +12,28 @@ checked against this same assertion.
 from __future__ import annotations
 
 from ledger.db import connect, user_version
-from ledger.dump import dump_text, restore
+from ledger.dump import _derived_tables, dump_text, restore
 from ledger.migrate import migrate
 
 
 def table_names(conn) -> list[str]:
+    """The tables the dump actually carries: not the FTS index or its shadows."""
+    derived = _derived_tables(conn)
     rows = conn.execute(
         "SELECT name FROM sqlite_master WHERE type = 'table'"
         " AND name NOT LIKE 'sqlite_%' ORDER BY name"
     ).fetchall()
-    return [row["name"] for row in rows]
+    return [row["name"] for row in rows if row["name"] not in derived]
+
+
+def search_rows(conn) -> list[tuple]:
+    return [
+        tuple(row)
+        for row in conn.execute(
+            "SELECT kind, row_id, monograph_id, title, body FROM search"
+            " ORDER BY kind, row_id"
+        )
+    ]
 
 
 def rows_of(conn, table) -> list[tuple]:
@@ -168,6 +180,7 @@ def test_dump_restores_into_an_identical_database(tmp_path):
         expected_tables = table_names(original)
         expected_rows = {name: rows_of(original, name) for name in expected_tables}
         expected_unsourced = unsourced(original)
+        expected_search = search_rows(original)
     finally:
         original.close()
 
@@ -193,6 +206,10 @@ def test_dump_restores_into_an_identical_database(tmp_path):
         # The unsourced constituent has to come back unsourced — a source_note
         # restored as '' instead of NULL would silently mend the row.
         assert unsourced(restored) == expected_unsourced
+
+        # The index is not in the dump; it is rebuilt from the tables that are.
+        assert search_rows(restored) == expected_search
+        assert expected_search, "nothing was indexed; the rebuild proves nothing"
         assert expected_unsourced, "no unsourced row in the fixture; that case is untested"
     finally:
         restored.close()
