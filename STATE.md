@@ -242,6 +242,56 @@ exists in the CLI: log a day, open a monograph, record a win.
 sourcing trigger, and §7 test 4. This is the session that finally makes
 `--status reviewed` refuse an unsourced record.
 
+### session 06 — the claim tables, and `reviewed` now refuses an unsourced record
+
+**Landed**
+
+- `schema/001_claims.sql` → `user_version = 2`. `vernacular`, `indication`,
+  `constituent`, `safety`, `benefit_sharing`, all cascading from `monograph`.
+- **Source is two columns, not one.** §4 says a source is "a `reference_id`, or
+  free text for a field record", so it is `source_reference_id` (a real foreign
+  key) plus `source_note`. One TEXT column holding `"R7"` would have thrown away
+  the graph, and the graph is the whole value.
+- `CREATE VIEW unsourced_claim` — every unsourced row in the database with the
+  record it holds back. The triggers read it and so does every count the UI
+  shows, so "unsourced" is defined once.
+- **Invariant 1 as a wall, not a doorway.** Ten triggers: two stop a record
+  reaching `reviewed` over unsourced rows, and eight stop an unsourced row being
+  added to — or un-sourced within — a record that is already `reviewed`. §4 says
+  "a trigger"; one trigger leaves the record mendable from the other side, and
+  an invariant with a hole is not an invariant.
+- `ledger/claims.py` — `add()`, `set_source()`, `Source`, the E1–E6 codes, the
+  four-step ramp, `headline_evidence()` (max across indications),
+  `unsourced_by_table()` for the per-section counts.
+- **§7 test 4** across all four claim tables in both directions, plus 19 more.
+
+`just check` passes: ruff clean, 104 tests green.
+
+**A bug in session 02's dump, found by extending its own test**
+
+The round-trip fixture now writes rows into all nine tables, including a
+deliberately unsourced one. That broke the restore, and the reason matters:
+
+`Connection.iterdump()` emits tables **alphabetically**, so `benefit_sharing`
+and `constituent` restore before `monograph` exists. The foreign keys fail, and
+worse, the sourcing triggers' `SELECT status FROM monograph` fails too.
+
+`ledger/dump.py` replaces it and emits **creation order** — every parent before
+its children, all indexes/views/triggers last, after the data they would
+otherwise fire on. It also carries `PRAGMA user_version`, which `iterdump`
+drops; without it a restored file cannot tell the Rust core which schema it is.
+The test now restores with foreign keys **on** and asserts
+`PRAGMA foreign_key_check` comes back empty.
+
+**Session 11 inherits this**: `just dump` must use `ledger dump`, not
+`sqlite3 .dump`. The CLI has the same alphabetical hazard and this container
+has no `sqlite3` binary anyway. That is a change to §4's stated habit and wants
+a decision.
+
+**Next session starts at:** BUILD.md §6, week 2, item **07** — `002_links.sql`
+(`monograph_reference` with `section`, `output_monograph`, `reference_tag`,
+`inbox_line`) plus `ledger link` and `ledger seed`.
+
 ---
 
 ## Open questions
@@ -274,6 +324,10 @@ answer them alone.
 - **New (04):** does the artboard 08 state 4 candidate list need to persist, or
   can it be fetched live at review time? Built as live. If it must persist there
   is no spare migration in schema v4 — decide in session 09.
+
+- **New (06):** §4's git habit is `sqlite3 ledger.sqlite .dump`. That ordering
+  cannot restore this schema (see session 06) and the binary is not present
+  here. `just dump` is planned to shell into `ledger dump` instead — confirm.
 
 ---
 
