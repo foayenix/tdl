@@ -250,7 +250,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 08 · `ledger ref` + Crossref, `--json`, DOI normalisation, offline failure path
 - [x] 09 · GBIF resolver, confidence threshold, review queue
 - [x] 10 · `003_fts.sql` — FTS5 + triggers + `ledger find`
-- [ ] 11 · `just dump` + pre-commit hook; restore-from-any-commit test
+- [x] 11 · `just dump` + pre-commit hook; restore-from-any-commit test
 
 **Week 3 — shell and components**
 

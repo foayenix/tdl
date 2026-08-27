@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Regenerate dump/ledger.sql before a commit, so the text file in git always
+# matches the database on disk. BUILD.md §4: the .db is never committed and the
+# dump beside it is the historical source of truth.
+#
+# Install with `just hooks`. It is deliberately quiet and never blocks a commit
+# that has nothing to do with the ledger: no database, nothing to dump.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+DB="${LEDGER_DB:-$HOME/Documents/ledger.sqlite}"
+[ -f "$DB" ] || exit 0
+
+PY=./.venv/bin/python
+[ -x "$PY" ] || PY=python3
+
+"$PY" -m ledger --db "$DB" dump --to dump/ledger.sql >/dev/null
+git add dump/ledger.sql

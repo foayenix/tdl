@@ -30,3 +30,23 @@ venv:
     python3.12 -m venv .venv || python3 -m venv .venv
     .venv/bin/python -m pip install --quiet --upgrade pip
     .venv/bin/python -m pip install --quiet pytest ruff
+
+# Write the database out as text. `dump/ledger.sql` is what gets committed —
+# the .db is binary and never does (BUILD.md §4).
+#
+# Not `sqlite3 ledger.sqlite .dump`: that emits tables alphabetically, which
+# cannot restore this schema (a claim table lands before `monograph` exists and
+# both the foreign keys and the sourcing triggers fail), and it has no answer
+# for the FTS5 shadow tables. See STATE.md, sessions 06 and 10.
+dump db="~/Documents/ledger.sqlite":
+    {{py}} -m ledger --db {{db}} dump --to dump/ledger.sql
+    git add dump/ledger.sql schema/
+
+# Rebuild a database from the committed dump.
+restore db out="/tmp/ledger-restored.sqlite":
+    {{py}} -m ledger --db {{out}} restore --from {{db}} --force
+
+# Point git at .githooks, so the pre-commit hook keeps the dump current.
+hooks:
+    git config core.hooksPath .githooks
+    @echo "core.hooksPath = .githooks"

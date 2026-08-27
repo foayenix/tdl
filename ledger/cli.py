@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
+from .commands import dump as dump_command
 from .commands import find as find_command
 from .commands import link as link_command
 from .commands import log as log_command
@@ -55,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     ref_command.register(subparsers)
     resolve_command.register(subparsers)
     find_command.register(subparsers)
+    dump_command.register(subparsers)
 
     return parser
 

@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 2, the corpus in the database — item 11 next.
+**Now:** week 3, shell and components — item 12 next.
 
 ---
 
@@ -533,6 +533,69 @@ it belongs to session 12.
 pre-commit hook, and the restore-from-any-commit test. Sessions 06 and 10 have
 already decided what `just dump` must call; this session is the plumbing.
 
+### session 11 — `just dump`, the pre-commit hook, and restore from any commit
+
+**Landed**
+
+- `ledger dump [--to FILE|-]` and `ledger restore --from FILE [--force]`.
+  `restore` refuses to overwrite an existing database without `--force`, and
+  reports `PRAGMA foreign_key_check` rather than claiming success over a broken
+  file.
+- `just dump` · `just restore` · `just hooks`.
+- `.githooks/pre-commit` — regenerates `dump/ledger.sql` and stages it. Quiet
+  and non-blocking: no database, nothing to do, exit 0. Reads `LEDGER_DB` so it
+  works for a database somewhere other than `~/Documents`.
+- `test_restore_from_commit.py` — walks every commit that touched
+  `dump/ledger.sql`, restores each into a fresh file, and checks foreign keys,
+  `user_version` and the four core tables.
+
+`just check` passes: ruff clean, 242 green, 2 skipped (no dump in history
+yet, with the reason printed), 2 deselected (network).
+
+**Run `just hooks` once.** It sets `core.hooksPath`, which is local git config
+and cannot be committed. Until it is run the dump is only refreshed when you
+run `just dump` by hand.
+
+**The history walk has nothing to walk yet, and says so**
+
+There are no commits carrying `dump/ledger.sql` — the git habit starts with
+your first real `just dump`. The parametrised test therefore has an empty
+parameter set, and a companion test **skips with the reason spelled out**
+rather than passing quietly. A green test over zero cases is how a check stops
+being a check.
+
+The mechanism itself is proven two other ways: a test that dumps and restores
+through the identical code path without needing history, and — during this
+session — a throwaway repo with two commits, both restored from
+`git show <sha>:dump/ledger.sql` at schema v4 with the index rebuilt.
+
+**Nothing fabricated was committed.** `dump/ledger.sql` stays absent. Writing a
+dump of invented plants into the file that is meant to be your historical
+record would poison exactly the thing §8 protects.
+
+**§4's stated habit has changed, and this is the confirmation to give or refuse**
+
+```
+sqlite3 ledger.sqlite .dump > dump/ledger.sql     # §4 as written
+just dump                                          # what now happens
+```
+
+`sqlite3 .dump` cannot restore this schema — sessions 06 and 10 have the
+detail: alphabetical table order breaks the foreign keys and the sourcing
+triggers, and FTS5's shadow tables cannot be replayed at all. `just dump` calls
+`ledger dump`, and `sqlite3 new.db < dump/ledger.sql` will restore the data but
+leave the **search index empty**; `ledger restore` rebuilds it. If §4 should be
+amended, the wording to change is in "The git habit".
+
+**Week 2 is complete.**
+
+**Next session starts at:** BUILD.md §6, week 3, item **12** — `cargo tauri
+init`, the window, the WAL connection, the `user_version` guard, and the
+vanilla-vs-Preact decision. §7 test 2 (concurrent access) belongs there, and it
+is the last §7 test outstanding. Note for that session: `foreign_keys = ON` is
+per-connection and the Rust side must set it (session 02), and so must
+`busy_timeout`.
+
 ---
 
 ## Open questions
@@ -566,9 +629,11 @@ answer them alone.
   can it be fetched live at review time? Built as live. If it must persist there
   is no spare migration in schema v4 — decide in session 09.
 
-- **New (06):** §4's git habit is `sqlite3 ledger.sqlite .dump`. That ordering
-  cannot restore this schema (see session 06) and the binary is not present
-  here. `just dump` is planned to shell into `ledger dump` instead — confirm.
+- **New (06, settled in 11 — needs your confirmation):** §4's git habit is
+  `sqlite3 ledger.sqlite .dump`. That ordering cannot restore this schema and
+  has no answer for FTS5's shadow tables. `just dump` now calls `ledger dump`,
+  and restoring wants `ledger restore` so the index is rebuilt. Amend §4 or
+  tell me to find another way.
 
 - **New (08):** where does `reference.access` come from? Crossref does not say
   reliably. Left NULL rather than guessed. Unpaywall would answer it but is
