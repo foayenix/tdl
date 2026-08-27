@@ -1619,6 +1619,46 @@ the two answers are **equal to each other**, not each to a literal.
 **The scope reckoning in §1 held.** v0.1 is the five screens it names, the
 monograph never moved, and nothing was cut.
 
+### after 30 — making a fresh clone runnable
+
+Not a §6 item. You asked to run it locally, so I tested the path a clean
+checkout actually takes and fixed what broke.
+
+**What was broken**
+
+1. **`just freeze` failed on a fresh clone** — `just venv` installed pytest and
+   ruff but not pyinstaller, so session 30's own recipe could not run on a
+   machine that had not been through this build. It installs all three now, and
+   the CLI editable, so `.venv/bin/ledger` exists.
+2. **A `just` message ran a command.** Backticks are command substitution in a
+   justfile, so `@echo "ready. \`just check\` runs the checks"` **ran
+   `just check`** as part of `just setup`. Caught by seeing test output where a
+   one-line message should have been.
+3. **`just --list` descriptions were the wrong line.** `just` shows the *last*
+   comment line above a recipe, so every multi-line comment was advertising its
+   final clause — `dump` read "for the FTS5 shadow tables", `release` read "is
+   not a release". Each block now ends with its summary.
+4. **`just dev` dead-ended on a missing ledger.** The app never migrates, so a
+   first run opened on `no ledger at …`. `dev` now runs `ledger migrate` itself
+   — the justfile is allowed to call the CLI, and this is the CLI doing it —
+   and says so before the window opens.
+
+**Added:** `just setup` (venv · npm install · sidecar) and `just dev [DB]`,
+which takes an optional path so a scratch ledger can be used without touching
+`~/Documents/ledger.sqlite`.
+
+**Verified on a clean clone of this branch**: `just setup` from nothing, then
+`just check` green, then `just dev /tmp/devtest.sqlite` creating and migrating
+the file and starting Vite through Tauri's `beforeDevCommand`.
+
+**A passthrough I tried and removed.** `just ledger *args` looked convenient but
+`just` splits variadic arguments on whitespace, so `mono "Khaya senegalensis"`
+arrived as two arguments. The editable install is the right answer: quoting
+works because it is a real executable.
+
+The README's "Running it" section is rewritten around all of this, including
+the macOS prerequisites.
+
 ---
 
 ## Open questions

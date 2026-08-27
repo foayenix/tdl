@@ -30,11 +30,69 @@ check:
         npx tsc --noEmit
     fi
 
-# Create the development virtualenv the checks run in.
+# Install everything a fresh clone needs.
+setup: venv
+    npm install
+    @just sidecar
+    @echo ""
+    @echo "ready."
+    @echo "  just dev            opens the window"
+    @echo "  just check          runs the checks"
+    @echo "  .venv/bin/ledger    the CLI"
+
+# The CLI itself is stdlib only (BUILD.md §3). These three are the tools §7 and
+# session 30 name — pytest and ruff for the checks, pyinstaller for the freeze —
+# and none of them is imported by `ledger/`.
+#
+# Build the development virtualenv.
 venv:
-    python3.12 -m venv .venv || python3 -m venv .venv
+    #!/usr/bin/env bash
+    set -euo pipefail
+    python3.12 -m venv .venv 2>/dev/null || python3 -m venv .venv
     .venv/bin/python -m pip install --quiet --upgrade pip
-    .venv/bin/python -m pip install --quiet pytest ruff
+    .venv/bin/python -m pip install --quiet pytest ruff pyinstaller
+    # Editable, so `.venv/bin/ledger` is the CLI you are working on. It has no
+    # dependencies of its own — this only puts the entry point on a path.
+    .venv/bin/python -m pip install --quiet -e .
+    version="$(.venv/bin/python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    case "$version" in
+        3.1[2-9]|3.[2-9]*) ;;
+        *) echo "warning: .venv is Python $version; BUILD.md §3 asks for 3.12+" >&2 ;;
+    esac
+
+# `cargo tauri dev` starts Vite itself (tauri.conf.json's beforeDevCommand), so
+# this is the only command you need.
+#
+#   just dev                        against ~/Documents/ledger.sqlite
+#   just dev /tmp/scratch.sqlite    against somewhere else
+#
+# Open the window.
+dev db="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v cargo-tauri >/dev/null 2>&1; then
+        echo "cargo-tauri is missing. Install it once with:" >&2
+        echo "    cargo install tauri-cli --version '^2'" >&2
+        exit 1
+    fi
+    [ -d node_modules ] || { echo "run 'just setup' first" >&2; exit 1; }
+    just sidecar
+
+    database="{{db}}"
+    [ -n "$database" ] || database="$HOME/Documents/ledger.sqlite"
+
+    # The app never migrates — Python owns the schema (BUILD.md §3) — so an
+    # absent ledger would open on `no ledger at …`. The justfile is allowed to
+    # run the CLI, and this is the CLI doing it.
+    if [ ! -f "$database" ]; then
+        echo "no ledger at $database — creating one"
+        {{py}} -m ledger --db "$database" migrate
+        echo ""
+    fi
+
+    export LEDGER_DB="$database"
+    cargo tauri dev
+
 
 # Write the database out as text. `dump/ledger.sql` is what gets committed —
 # the .db is binary and never does (BUILD.md §4).
@@ -43,6 +101,8 @@ venv:
 # cannot restore this schema (a claim table lands before `monograph` exists and
 # both the foreign keys and the sourcing triggers fail), and it has no answer
 # for the FTS5 shadow tables. See STATE.md, sessions 06 and 10.
+#
+# Write the database out as text, and stage it.
 dump db="~/Documents/ledger.sqlite":
     {{py}} -m ledger --db {{db}} dump --to dump/ledger.sql
     git add dump/ledger.sql schema/
@@ -59,9 +119,11 @@ hooks:
 # A development stand-in for the frozen sidecar.
 #
 # tauri.conf.json declares `externalBin`, so every cargo invocation needs the
-# file to exist — but the real one is a PyInstaller freeze and does not arrive
-# until session 30. This shim runs the CLI from source and behaves identically
-# from Rust's side. It lives in src-tauri/binaries/, which is gitignored.
+# file to exist. This shim runs the CLI from source and behaves identically from
+# Rust's side; `just freeze` replaces it with the real thing, and this recipe
+# will not overwrite that. It lives in src-tauri/binaries/, which is gitignored.
+#
+# Write a development stand-in for the frozen sidecar.
 sidecar:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -87,6 +149,8 @@ sidecar:
 # The frozen binary carries schema/ because Python owns migrations and Rust
 # never does one — a sidecar with no schema could not migrate either. The file
 # on disk carries the target triple, which is what Tauri looks for.
+#
+# Freeze the CLI into the sidecar the app ships. Run this on the target machine.
 freeze:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -96,11 +160,19 @@ freeze:
     install -m 755 build/dist/ledger "src-tauri/binaries/ledger-{{triple}}"
     echo "froze src-tauri/binaries/ledger-{{triple}}"
 
-# Everything the release needs, in order. `check` first: a build of a red tree
-# is not a release.
+# `check` runs first: a build of a red tree is not a release.
+#
+# Build the shippable bundle.
 release: check freeze
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v cargo-tauri >/dev/null 2>&1; then
+        echo "cargo-tauri is missing. Install it once with:" >&2
+        echo "    cargo install tauri-cli --version '^2'" >&2
+        exit 1
+    fi
     npm run build
-    cargo tauri build --config src-tauri/tauri.conf.json
+    cargo tauri build
 
 # Prove the sidecar runs where there is no Python at all.
 verify-freeze:

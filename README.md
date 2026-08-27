@@ -34,32 +34,66 @@ historical source of truth.
 
 ---
 
-## Getting started
+## Running it
+
+### Once, per machine
+
+On macOS you need the Xcode command line tools, and then four things:
 
 ```bash
-just venv          # a Python 3.12 virtualenv with pytest and ruff
-npm install
-just check         # ruff · pytest · cargo fmt · cargo clippy · cargo test · tsc
+xcode-select --install                       # the linker cargo needs
+brew install just node python@3.12
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo install tauri-cli --version '^2'       # a few minutes, once
 ```
 
-Create the ledger and put something in it:
+### Then
 
 ```bash
-ledger migrate
-ledger seed --from ~/notes/plants.csv     # or: ledger mono "Khaya senegalensis"
-ledger log --minutes 90 --note "Khaya bark, 3 refs"
+just setup      # the virtualenv, npm install, and the development sidecar
+just dev        # opens the window
 ```
 
-Run the app:
+`just dev` starts Vite itself, so it is the only command you need. It opens
+against `~/Documents/ledger.sqlite`, creating and migrating it if it is not
+there yet. Point it somewhere else to try things out without touching your real
+ledger:
 
 ```bash
-just sidecar       # a development stand-in for the frozen binary
-npm run dev &      # the frontend
-cargo tauri dev    # the window
+just dev /tmp/scratch.sqlite
 ```
 
-`just hooks` installs the pre-commit hook that keeps `dump/ledger.sql` current.
-Run it once; `core.hooksPath` is local git config and cannot be committed.
+The **app** never migrates — Python owns the schema (§3) — so what `just dev`
+does is run `ledger migrate` for you before it opens the window, and say so.
+
+`just setup` installs the CLI into the virtualenv, so you can put work into a
+ledger from another terminal while the window is open. Both processes hold the
+file at once; that is what WAL is for.
+
+```bash
+.venv/bin/ledger --db /tmp/scratch.sqlite log --minutes 90 --note "first day"
+.venv/bin/ledger --db /tmp/scratch.sqlite mono "Khaya senegalensis" --part "stem bark" --no-edit
+.venv/bin/ledger --db /tmp/scratch.sqlite win note "Evidence grading"
+```
+
+The window picks those up on ⌘R. To get `ledger` on your `PATH` proper,
+`pipx install -e .` from the repo, or add `.venv/bin` to it.
+
+**An empty ledger is not an empty screen.** Today shows the streak at 0 and
+Corpus shows artboard 08's first-run state, which explains what a monograph is
+and offers `ledger seed --from ~/notes/plants.csv`. There is no demo data and
+there will not be: §8 forbids placeholder plants, and the species in the
+artboards are design fixtures for artboard 01 only.
+
+### Checks and hooks
+
+```bash
+just check      # ruff · pytest · cargo fmt · cargo clippy · cargo test · tsc
+just hooks      # the pre-commit hook that keeps dump/ledger.sql current
+```
+
+Run `just hooks` once — `core.hooksPath` is local git config and cannot be
+committed.
 
 ---
 
