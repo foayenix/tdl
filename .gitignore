@@ -14,7 +14,6 @@ __pycache__/
 .ruff_cache/
 .venv/
 build/
-dist/
 *.egg-info/
 
 # rust / tauri
@@ -31,3 +30,7 @@ app/dist/
 
 # frontend build output
 dist/
+
+# pyinstaller
+build/work/
+build/dist/

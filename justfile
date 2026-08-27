@@ -68,7 +68,52 @@ sidecar:
     mkdir -p src-tauri/binaries
     target="src-tauri/binaries/ledger-{{triple}}"
     root="$(pwd)"
-    # Always rewrite: the shim hard-codes paths, and a stale one fails in a way
-    # that only shows up inside the running app (found in session 19).
+
+    # Never overwrite a real frozen binary. `check` calls this recipe, so a
+    # `just check` after a `just freeze` would otherwise put the shim back and
+    # `cargo tauri build` would bundle it (found in session 30).
+    if [ -e "$target" ] && ! head -c 2 "$target" | grep -q '#!'; then
+        echo "$target is a frozen binary; leaving it alone"
+        exit 0
+    fi
+
+    # Otherwise always rewrite: the shim hard-codes paths, and a stale one
+    # fails in a way that only shows up inside the running app (session 19).
     printf '#!/usr/bin/env bash\ncd %q\nexec %q -m ledger "$@"\n' "$root" "$root/{{py}}" > "$target"
     chmod +x "$target"
+
+# Freeze the CLI into the sidecar the app ships (BUILD.md §3, session 30).
+#
+# The frozen binary carries schema/ because Python owns migrations and Rust
+# never does one — a sidecar with no schema could not migrate either. The file
+# on disk carries the target triple, which is what Tauri looks for.
+freeze:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{py}} -m PyInstaller --clean --noconfirm \
+        --distpath build/dist --workpath build/work ledger.spec
+    mkdir -p src-tauri/binaries
+    install -m 755 build/dist/ledger "src-tauri/binaries/ledger-{{triple}}"
+    echo "froze src-tauri/binaries/ledger-{{triple}}"
+
+# Everything the release needs, in order. `check` first: a build of a red tree
+# is not a release.
+release: check freeze
+    npm run build
+    cargo tauri build --config src-tauri/tauri.conf.json
+
+# Prove the sidecar runs where there is no Python at all.
+verify-freeze:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    scrubbed="$(mktemp -d)/bin"
+    mkdir -p "$scrubbed"
+    for tool in bash ls cat rm mkdir; do ln -sf "$(command -v $tool)" "$scrubbed/$tool"; done
+    if env -i PATH="$scrubbed" "$scrubbed/bash" -c 'command -v python3' >/dev/null 2>&1; then
+        echo "the scrubbed PATH still has python; this proves nothing" >&2
+        exit 1
+    fi
+    db="$(mktemp -d)/ledger.sqlite"
+    env -i PATH="$scrubbed" HOME="$(dirname "$db")" ./build/dist/ledger --db "$db" migrate
+    env -i PATH="$scrubbed" HOME="$(dirname "$db")" ./build/dist/ledger --db "$db" log --minutes 20
+    echo "the frozen sidecar runs with no Python present"

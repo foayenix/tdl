@@ -13,12 +13,28 @@ from __future__ import annotations
 
 import re
 import sqlite3
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from .db import user_version
 
-SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
+
+def _schema_dir() -> Path:
+    """Where the .sql files are.
+
+    Frozen by PyInstaller they sit beside the executable's bundle root, which
+    `sys._MEIPASS` names; from source they sit next to the package. The frozen
+    sidecar must carry them, because Rust never migrates (BUILD.md §3) and a
+    binary with no schema could not migrate either.
+    """
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled is not None:
+        return Path(bundled) / "schema"
+    return Path(__file__).resolve().parent.parent / "schema"
+
+
+SCHEMA_DIR = _schema_dir()
 
 _FILENAME = re.compile(r"^(\d{3})_[a-z0-9_]+\.sql$")
 
