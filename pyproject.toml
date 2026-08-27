@@ -1,0 +1,27 @@
+[project]
+name = "ledger"
+version = "0.1.0.dev0"
+description = "The Deposit Ledger — daily log and materia medica corpus."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+ledger = "ledger.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ledger*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+markers = ["network: hits the live network; excluded from `just check`"]
+addopts = "-m 'not network'"
