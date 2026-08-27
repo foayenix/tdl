@@ -281,7 +281,7 @@ Thirty sessions. Tick each box as it lands.
 
 - [x] 28 · **Artboard 08** states 1, 2, 4, 5, 6 (skip 3 — overload, v0.2)
 - [x] 29 · **Artboard 04** — the wall
-- [ ] 30 · PyInstaller freeze, `cargo tauri build`, launch from `/Applications` on a machine with no Python, `README.md`, tag `v0.1`
+- [x] 30 · PyInstaller freeze, `cargo tauri build`, launch from `/Applications` on a machine with no Python, `README.md`, tag `v0.1`
 
 **Backfill to 40 real records happens alongside, not after.** Seed session 03 with the three plants known best. Opening a tool that already contains real work is what makes it worth opening tomorrow.
 

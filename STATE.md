@@ -1529,6 +1529,96 @@ here** — this is Linux, and there is no Mac to launch from `/Applications` on.
 Expect to land the freeze scripting and the README, and to hand you a
 documented list of what must be run on the Mac.
 
+### session 30 — the freeze, the bundle, and what is left before you tag
+
+**Landed**
+
+- `ledger.spec` and `just freeze` — PyInstaller, with `schema/` bundled.
+  `migrate.py` resolves `SCHEMA_DIR` through `sys._MEIPASS` when frozen.
+- `scripts/ledger_entry.py` — the frozen entry point.
+- `just verify-freeze`, `just release`.
+- `README.md`.
+
+`just check` passes: 282 pytest, 62 cargo, tsc clean.
+
+**The freeze is verified where it matters**
+
+On a `PATH` scrubbed of every python — `command -v python python3` returns
+nothing — the frozen binary migrates through all four migrations, opens a
+monograph, logs a day and searches FTS5. The bundled schema is what makes that
+possible, and it is why the spec carries it.
+
+Then the whole way round: `just release` produced `.deb`, `.rpm` and
+`.AppImage`; the `.deb` was extracted and **the packaged app launched from it,
+with no Python on its PATH**, read the database and rendered Today. The
+`usr/bin/ledger` it ships is the frozen ELF, not the development shim.
+
+**A shipping hazard, found and fixed**
+
+`just check` calls `just sidecar`, which **always** rewrote the development
+shim. So `just freeze` followed by any `just check` would silently replace the
+frozen binary with a two-line shell script, and `cargo tauri build` would
+bundle that. `sidecar` now leaves any file that is not a shim alone, and says
+so. `release` runs `check` before `freeze`, so the order was already right —
+but only by luck, and only for that one recipe.
+
+**The frozen entry point** could not be `ledger/__main__.py`: it uses a
+relative import, which is correct for `python -m ledger` and wrong for
+PyInstaller, where the script runs as `__main__` with no package around it.
+
+---
+
+## What is not done, and why
+
+**I have not tagged `v0.1`.** Three of §6 item 30's conditions cannot be met
+from here, and one of them is the acceptance test:
+
+1. **No macOS build exists.** This is Linux. `cargo tauri build` has been proven
+   to work end to end, but it has produced Linux bundles, not a `.app`. The
+   `launch from /Applications` test has not happened.
+2. **The Crossref and GBIF fixtures are shape fixtures, not recordings** —
+   both APIs are policy-blocked here (sessions 08, 09). The live tests are
+   written and marked `@pytest.mark.network`; one command replaces each
+   fixture.
+3. **Open questions are open.** Several change behaviour, not wording — the
+   `wfo_id` gap, the `Save monograph` semantics, §4's dump habit.
+
+Tagging is a claim that a release was made and works. Two of those three are
+things only you can do, so the tag is yours:
+
+```bash
+just release                      # on the Mac
+open src-tauri/target/release/bundle/macos/            # then copy to /Applications
+pytest -m network ledger/tests    # and replace the two fixtures
+git tag -a v0.1 -m "v0.1"
+```
+
+**On a Mac, `just freeze` must be run on the Mac.** A PyInstaller binary is
+native; the Linux one in this repo's `build/` is not portable, which is also
+why `src-tauri/binaries/` is gitignored.
+
+---
+
+## Where v0.1 actually stands
+
+All thirty items in §6 are ticked. Five screens, light theme:
+
+| artboard | state |
+|---|---|
+| 01 system | built — the component library renders live from the CSS variables |
+| 02 today | built — stat row, floor toggle, autosaving note, three deposit rows, fourteen-day table |
+| 03 corpus | built — table, filter rail with hash state, `find` over FTS5 |
+| 05 monograph | built — header, four claim sections with inline add, three prose sections, references, sticky rail, reviewed block |
+| 04 the wall | built — grouped by year, kind counts, no pagination |
+| 08 states | 1, 2, 4, 5, 6 built as real renders; 3 is v0.2 |
+
+Every §7 test exists. Where a rule lives in two languages — the streak, the
+search tokeniser, the claim columns, the Crossref reply shape — a test asserts
+the two answers are **equal to each other**, not each to a literal.
+
+**The scope reckoning in §1 held.** v0.1 is the five screens it names, the
+monograph never moved, and nothing was cut.
+
 ---
 
 ## Open questions
