@@ -114,6 +114,32 @@ export async function corpus(): Promise<Corpus> {
   return invoke<Corpus>("ledger_corpus");
 }
 
+export type Record = {
+  id: number;
+  accepted_name: string | null;
+  authority: string | null;
+  family: string | null;
+  part: string | null;
+  habitat_note: string | null;
+  wfo_id: string | null;
+  gbif_key: number | null;
+  gbif_confidence: number | null;
+  status: string;
+  summary: string | null;
+  summary_rewritten_at: string | null;
+  preparation: string | null;
+  first_written: string;
+  last_touched: string;
+  indications: number;
+  references_bound: number;
+  strongest_evidence: string | null;
+  unsourced: number;
+};
+
+export async function record(id: number): Promise<Record> {
+  return invoke<Record>("ledger_record", { id });
+}
+
 export type SearchResult = {
   monograph_ids: number[];
   hits: number;

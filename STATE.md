@@ -1209,6 +1209,56 @@ actually happens. Header, identity strip, summary strip. Note that `wfo_id` is
 NULL for every record (the session 09 gap) so the identity strip will render a
 blank there.
 
+### session 23 — artboard 05: the record header, identity strip, summary strip
+
+**Landed**
+
+- Rust: `record(id)` — the whole header in one query, including the three
+  derived figures the summary strip needs (indications, distinct references
+  bound, strongest evidence) and the unsourced count from the
+  `unsourced_claim` view.
+- `src/screens/record.ts` and the route `#/monograph?id=N`, reached by pressing
+  a corpus row.
+
+`just check` passes: 282 pytest, 47 cargo, tsc clean. Verified in the window:
+
+```
+CORPUS › MONOGRAPH 1
+Khaya senegalensis (Desr.) A.Juss.  SOURCED
+Meliaceae / stem bark / African mahogany, dry-savanna belt from Senegal to Sudan
+                                          wfo-id  not resolved
+                                        gbif key  not resolved
+                                   first written  2026-07-18
+                                    last touched  2026-08-27 13:25
+3 indications · 3 references bound · strongest evidence E5 RCT · 1 row unsourced
+```
+
+**The unsourced count follows into the header, as §6 requires.** `1 row
+unsourced` is in `secondary` and is not softened, hidden behind a toggle, or
+phrased as a suggestion.
+
+**An identifier nobody has established reads `not resolved`, not blank**
+
+`wfo-id` is NULL for every record — the gap raised in session 09, where no
+session fills it — and `gbif key` is NULL here because GBIF is policy-blocked
+in this container. Rendering those as empty space would let a missing
+identifier look like a rendering bug. They say what they are.
+
+**`Save monograph` is rendered disabled.** Nothing on the record is editable
+until sessions 24–27, so there is nothing to save. Same reasoning as `Fetch`
+before session 19 and the `conservation concern` flag: a control that silently
+does nothing is worse than one that says why it is off.
+
+**The authority is Fraunces 16 upright**, not Plex Sans — artboard 05 sets it
+that way, and it is the same rule as everywhere else: the binomial is italic,
+the authority never is.
+
+**Next session starts at:** BUILD.md §6, week 5, item **24** — the vernacular
+and indication sections with inline add. Each section has a count, a `+ add`
+quiet button, and per-row sourcing; the indications table already has its
+column widths in `COLUMNS.indications` and its unsourced row proven in session
+16.
+
 ---
 
 ## Open questions

@@ -777,3 +777,145 @@
   color: var(--muted);
   flex: none;
 }
+
+/* ── artboard 05 · the monograph record ─────────────────────────────── */
+
+.app-content--record {
+  padding: 0;
+  gap: 0;
+}
+
+.record__head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+  padding: 24px var(--space-28) var(--space-16);
+}
+
+.record__head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.record__identity-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  min-width: 0;
+}
+
+.record__crumb {
+  font-family: var(--font-mono);
+  font-size: var(--size-micro-label);
+  line-height: 1;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.record__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+}
+
+/* Fraunces, upright, muted. A binomial is italic; its authority never is. */
+.record__authority {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.record__unnamed {
+  font-family: var(--font-display);
+  font-size: var(--size-record-name);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.record__provenance {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell);
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+
+.record__slash {
+  color: var(--hairline);
+}
+
+.record__habitat {
+  color: var(--muted);
+}
+
+.identity {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.identity__line--spaced {
+  padding-top: 5px;
+}
+
+.identity__value {
+  color: var(--ink);
+}
+
+.identity__absent {
+  color: var(--disabled-ink);
+}
+
+.record__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-20);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.record__dot {
+  color: var(--muted);
+}
+
+.record__strip-value {
+  color: var(--ink);
+}
+
+/* The unsourced count follows into the record header (DESIGN.md §6). */
+.record__unsourced {
+  color: var(--secondary);
+}
+
+.record__save {
+  margin-left: auto;
+}
+
+.record__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-20);
+  padding: 0 var(--space-28) 24px;
+}

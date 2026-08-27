@@ -330,6 +330,84 @@ pub fn corpus(path: &Path) -> Result<Corpus> {
     })
 }
 
+/// The record header and its two strips (artboard 05).
+///
+/// This is the screen where the work actually happens, and §1 says it does not
+/// move: a corpus table with no detail view is a list of names.
+// f64 has no Eq — gbif_confidence is a measurement, not an identity.
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct Record {
+    pub id: i64,
+    pub accepted_name: Option<String>,
+    pub authority: Option<String>,
+    pub family: Option<String>,
+    pub part: Option<String>,
+    pub habitat_note: Option<String>,
+    pub wfo_id: Option<String>,
+    pub gbif_key: Option<i64>,
+    pub gbif_confidence: Option<f64>,
+    pub status: String,
+    pub summary: Option<String>,
+    pub summary_rewritten_at: Option<String>,
+    pub preparation: Option<String>,
+    pub first_written: String,
+    pub last_touched: String,
+
+    // The summary strip: `7 indications · 19 references bound ·
+    // strongest evidence E5 RCT · 3 rows unsourced`.
+    pub indications: i64,
+    pub references_bound: i64,
+    pub strongest_evidence: Option<String>,
+    pub unsourced: i64,
+}
+
+pub fn record(path: &Path, id: i64) -> Result<Record> {
+    let connection = open_checked(path)?;
+
+    let sql = format!(
+        "SELECT m.id, m.accepted_name, m.authority, m.family, m.part, m.habitat_note,
+                m.wfo_id, m.gbif_key, m.gbif_confidence, m.status, m.summary,
+                m.summary_rewritten_at, m.preparation, m.first_written,
+                strftime('%Y-%m-%d %H:%M', m.last_touched, 'localtime'),
+                (SELECT count(*) FROM indication i WHERE i.monograph_id = m.id),
+                (SELECT count(DISTINCT mr.reference_id) FROM monograph_reference mr
+                   WHERE mr.monograph_id = m.id),
+                (SELECT i.evidence FROM indication i WHERE i.monograph_id = m.id
+                   ORDER BY {EVIDENCE_RANK} DESC LIMIT 1),
+                (SELECT count(*) FROM unsourced_claim u WHERE u.monograph_id = m.id)
+         FROM monograph m WHERE m.id = ?1"
+    );
+
+    connection
+        .query_row(&sql, [id], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                accepted_name: row.get(1)?,
+                authority: row.get(2)?,
+                family: row.get(3)?,
+                part: row.get(4)?,
+                habitat_note: row.get(5)?,
+                wfo_id: row.get(6)?,
+                gbif_key: row.get(7)?,
+                gbif_confidence: row.get(8)?,
+                status: row.get(9)?,
+                summary: row.get(10)?,
+                summary_rewritten_at: row.get(11)?,
+                preparation: row.get(12)?,
+                first_written: row.get(13)?,
+                last_touched: row.get(14)?,
+                indications: row.get(15)?,
+                references_bound: row.get(16)?,
+                strongest_evidence: row.get(17)?,
+                unsourced: row.get(18)?,
+            })
+        })
+        .map_err(|error| match error {
+            rusqlite::Error::QueryReturnedNoRows => Error::Refused(format!("no monograph {id}")),
+            other => Error::Sqlite(other),
+        })
+}
+
 /// What a `find` searched and what it found.
 // f64 has no Eq — the elapsed time is a measurement, not an identity.
 #[derive(Debug, Clone, Serialize, PartialEq, Default)]

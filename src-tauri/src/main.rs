@@ -9,8 +9,8 @@ use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
     add_output, corpus, day_log, default_path, nav_counts, nearest_name, note_for_today,
-    open_monograph, parse_fetch, save_note, search, set_floor_day, status, today_stats, Corpus,
-    DayLog, FetchResult, NavCounts, SavedNote, SearchResult, Status, TodayStats,
+    open_monograph, parse_fetch, record, save_note, search, set_floor_day, status, today_stats,
+    Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult, Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -112,6 +112,11 @@ fn ledger_corpus() -> std::result::Result<Corpus, String> {
 }
 
 #[tauri::command]
+fn ledger_record(id: i64) -> std::result::Result<Record, String> {
+    record(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_search(query: String) -> std::result::Result<SearchResult, String> {
     search(&ledger_path(), &query).map_err(|error| error.to_string())
 }
@@ -157,7 +162,8 @@ fn main() {
             ledger_fetch_reference,
             ledger_corpus,
             ledger_search,
-            ledger_nearest_name
+            ledger_nearest_name,
+            ledger_record
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

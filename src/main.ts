@@ -1,10 +1,11 @@
 import { append, clear, el } from "./dom";
-import { corpus, dayLog, navCounts, note, status, todayStats } from "./ledger";
+import { corpus, dayLog, navCounts, note, record, status, todayStats } from "./ledger";
 import type { Corpus, DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
 import { readHash } from "./hash";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
 import { renderCorpus } from "./screens/corpus";
+import { renderRecord } from "./screens/record";
 import { renderToday } from "./screens/today";
 
 function routeFromHash(): Route {
@@ -68,7 +69,12 @@ async function render(): Promise<void> {
 
   // The corpus puts a filter rail beside the content; the shell holds both.
   const screen = el("main", {
-    class: route === "corpus" ? "app-content app-content--railed" : "app-content",
+    class:
+      route === "corpus"
+        ? "app-content app-content--railed"
+        : route === "monograph"
+          ? "app-content app-content--record"
+          : "app-content",
   });
 
   // The footer lives at the foot of the sidebar, not in a bar across the
@@ -85,8 +91,24 @@ async function render(): Promise<void> {
     renderToday(screen, today, saved, log, () => void render());
   }
   else if (route === "corpus" && catalogue) {
-    // The monograph screen is session 23; until then a row press does nothing.
-    renderCorpus(screen, catalogue, readHash().params, () => {}, () => void render());
+    renderCorpus(
+      screen,
+      catalogue,
+      readHash().params,
+      (id) => {
+        window.location.hash = `/monograph?id=${id}`;
+      },
+      () => void render(),
+    );
+  } else if (route === "monograph") {
+    const id = Number(readHash().params.get("id"));
+    if (Number.isFinite(id) && id > 0) {
+      record(id)
+        .then((monograph) => renderRecord(screen, monograph, () => void render()))
+        .catch((problem) => append(screen, el("div", { class: "trouble" }, String(problem))));
+    } else {
+      append(screen, el("div", { class: "trouble" }, "no monograph named in the address"));
+    }
   } else if (route === "system") renderSystem(screen);
   else if (error) append(screen, el("div", { class: "trouble" }, error));
 }

@@ -7,6 +7,8 @@ import { readableSize, savedAt } from "./ledger";
 export type Route =
   | "today"
   | "corpus"
+  /** Reached from a corpus row, not from the nav — artboard 05. */
+  | "monograph"
   | "references"
   | "outputs"
   | "wall"
@@ -48,7 +50,7 @@ export const GROUPS: Group[] = [
 ];
 
 /** Screens that exist. The rest are disabled until their session lands. */
-export const BUILT: ReadonlySet<Route> = new Set<Route>(["today", "corpus", "system"]);
+export const BUILT: ReadonlySet<Route> = new Set<Route>(["today", "corpus", "monograph", "system"]);
 
 /** The two mono lines at the foot of the sidebar: path, then size and clock. */
 function footer(connected: Status | null, error: string | null): HTMLElement {
