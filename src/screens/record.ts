@@ -22,6 +22,7 @@ import { renderBenefitSharing, renderProse } from "./prose";
 import { renderRail, type RailSection } from "./rail";
 import { renderReferences, renderReviewedStatus } from "./references";
 import { renderSection, type SectionSpec } from "./section";
+import { renderUnresolvedName } from "./states";
 import { COLUMNS } from "../table";
 
 /** `wfo-id wfo-0000651773` — label muted, value ink. Blank when unknown. */
@@ -251,7 +252,15 @@ let editingProse: string | null = null;
 export async function renderRecord(
   host: HTMLElement,
   monograph: Record,
+  queue: { position: number; total: number } | null,
+  resolution: import("../ledger").Resolution | null,
   onSave: () => void,
+  actions: {
+    resolve: () => void;
+    acceptTop: () => void;
+    enterByHand: () => void;
+    keepInQueue: () => void;
+  },
   reload: () => void,
 ): Promise<void> {
   clear(host);
@@ -277,7 +286,22 @@ export async function renderRecord(
   const positionsOf = (ids: number[]) =>
     ids.map((id) => numbers.get(id)).filter((n): n is number => n !== undefined);
 
-  append(host, header(monograph, onSave), trouble, body);
+  append(
+    host,
+    header(monograph, onSave),
+    trouble,
+    // Artboard 08 state 4, on the record itself — where the decision is made.
+    renderUnresolvedName(
+      monograph,
+      queue,
+      resolution,
+      actions.resolve,
+      actions.acceptTop,
+      actions.enterByHand,
+      actions.keepInQueue,
+    ),
+    body,
+  );
 
   // Artboard 05's order: summary, then the claim sections, then preparation
   // and benefit-sharing.

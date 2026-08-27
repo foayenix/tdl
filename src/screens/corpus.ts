@@ -10,6 +10,7 @@ import type { Evidence } from "../evidence";
 import type { Corpus, CorpusRow, SearchResult } from "../ledger";
 import { applyFilters, renderFilterRail } from "./filters";
 import { renderFind } from "./find";
+import { renderFirstRun, renderNoResults } from "./states";
 import { COLUMNS, renderTable } from "../table";
 
 function nameCell(row: CorpusRow): Node {
@@ -37,6 +38,8 @@ export function renderCorpus(
   params: URLSearchParams,
   open: (id: number) => void,
   reload: () => void,
+  onNew: (name: string) => void,
+  nearest: [string, number] | null,
 ): void {
   clear(host);
 
@@ -88,8 +91,25 @@ export function renderCorpus(
         reload();
       }),
     ),
-    renderTable(COLUMNS.corpus, rows, {
-      footer: el(
+    // State 1 — nothing in the corpus at all. Not an empty table: an
+    // explanation and the two ways in.
+    data.total === 0
+      ? renderFirstRun(() => onNew(""))
+      : shown === 0 && findQuery && findResult
+        ? // State 6 — a query nothing matches.
+          renderNoResults(
+            findQuery,
+            {
+              monographs: findResult.monographs_searched,
+              references: findResult.references_searched,
+              outputs: findResult.outputs_searched,
+              ms: findResult.milliseconds,
+            },
+            nearest,
+            onNew,
+          )
+        : renderTable(COLUMNS.corpus, rows, {
+            footer: el(
         "div",
         { class: "corpus__footer" },
         el(
@@ -99,11 +119,15 @@ export function renderCorpus(
             `${data.indications === 1 ? "indication" : "indications"} · ` +
             `${data.never_published_on} never published on`,
         ),
-        el(
-          "button",
-          { type: "button", class: "button-quiet button-quiet--accent" },
-          "New monograph",
-        ),
+        (() => {
+          const button = el(
+            "button",
+            { type: "button", class: "button-quiet button-quiet--accent" },
+            "New monograph",
+          );
+          button.addEventListener("click", () => onNew(findQuery));
+          return button;
+        })(),
       ),
     }),
   );

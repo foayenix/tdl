@@ -8,12 +8,13 @@ use std::time::{Duration, Instant};
 use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_claim, add_output, benefit_sharing, cited_by_outputs, claims, corpus, day_log,
-    default_path, nav_counts, nearest_name, note_for_today, open_monograph, parse_fetch,
-    queued_reading, record, record_references, save_benefit_sharing, save_note, save_prose, search,
-    section_sources, set_floor_day, status, today_stats, unsourced_by_section, BenefitSharing,
-    BoundReference, CitingOutput, Claim, Corpus, DayLog, FetchResult, NavCounts, QueuedReading,
-    Record, SavedNote, SearchResult, Status, TodayStats,
+    add_claim, add_output, benefit_sharing, broken_streak, cited_by_outputs, claims, corpus,
+    day_log, default_path, nav_counts, nearest_name, next_skeleton, note_for_today, open_monograph,
+    parse_fetch, parse_resolution, queue_position, queued_reading, record, record_references,
+    save_benefit_sharing, save_note, save_prose, search, section_sources, set_floor_day,
+    set_name_by_hand, status, today_stats, unsourced_by_section, BenefitSharing, BoundReference,
+    BrokenStreak, CitingOutput, Claim, Corpus, DayLog, FetchResult, NavCounts, QueuePosition,
+    QueuedReading, Record, Resolution, SavedNote, SearchResult, Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -104,6 +105,68 @@ async fn ledger_fetch_reference(
     Ok(parse_fetch(&stdout, elapsed))
 }
 
+/// Resolve a record's name against GBIF, through the sidecar.
+///
+/// Same shape as `Fetch`: enrichment is Python's and Rust has no HTTP client.
+/// Below the threshold the CLI writes nothing to `accepted_name` and reports
+/// the candidates instead — this end only reads what it said.
+#[tauri::command]
+async fn ledger_resolve_name(
+    app: tauri::AppHandle,
+    name: String,
+    accept: bool,
+) -> std::result::Result<Resolution, String> {
+    let database = ledger_path();
+
+    let mut args = vec![
+        "--db".to_string(),
+        database.to_string_lossy().into_owned(),
+        "resolve".to_string(),
+        name.trim().to_string(),
+        "--json".to_string(),
+    ];
+    if accept {
+        // Artboard 08 state 4's `Accept top match`. A person deciding is not
+        // the machine guessing.
+        args.push("--accept".to_string());
+    }
+
+    let command = app
+        .shell()
+        .sidecar("ledger")
+        .map_err(|error| format!("the ledger sidecar is not available: {error}"))?
+        .args(args);
+
+    let output = match tokio::time::timeout(SIDECAR_TIMEOUT, command.output()).await {
+        Err(_) => {
+            return Ok(Resolution {
+                reason: format!(
+                    "GBIF did not answer within {}s — nothing was written",
+                    SIDECAR_TIMEOUT.as_secs()
+                ),
+                ..Resolution::default()
+            })
+        }
+        Ok(Err(error)) => return Err(format!("the ledger sidecar could not run: {error}")),
+        Ok(Ok(output)) => output,
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let text = if stdout.trim().is_empty() {
+        stderr.as_ref()
+    } else {
+        stdout.as_ref()
+    };
+
+    Ok(parse_resolution(text))
+}
+
+#[tauri::command]
+fn ledger_set_name_by_hand(id: i64, name: String) -> std::result::Result<Record, String> {
+    set_name_by_hand(&ledger_path(), id, &name).map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 fn ledger_day_log() -> std::result::Result<DayLog, String> {
     day_log(&ledger_path(), DAY_LOG_SPAN).map_err(|error| error.to_string())
@@ -112,6 +175,21 @@ fn ledger_day_log() -> std::result::Result<DayLog, String> {
 #[tauri::command]
 fn ledger_corpus() -> std::result::Result<Corpus, String> {
     corpus(&ledger_path()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_broken_streak() -> std::result::Result<Option<BrokenStreak>, String> {
+    broken_streak(&ledger_path()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_queue_position(id: i64) -> std::result::Result<Option<QueuePosition>, String> {
+    queue_position(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_next_skeleton() -> std::result::Result<Option<i64>, String> {
+    next_skeleton(&ledger_path()).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -237,7 +315,12 @@ fn main() {
             ledger_record_references,
             ledger_cited_by_outputs,
             ledger_queued_reading,
-            ledger_unsourced_by_section
+            ledger_unsourced_by_section,
+            ledger_broken_streak,
+            ledger_queue_position,
+            ledger_next_skeleton,
+            ledger_resolve_name,
+            ledger_set_name_by_hand
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

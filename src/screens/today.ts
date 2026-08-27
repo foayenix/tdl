@@ -15,6 +15,8 @@ import {
 import { renderDayLog } from "./daylog";
 import { renderDeposit } from "./deposit";
 import { renderNote } from "./note";
+import { renderBrokenStreak } from "./states";
+import type { BrokenStreak } from "../ledger";
 
 /** `current streak 41 days` — label muted, the number in ink at 13px. */
 function stat(label: string, value: number, suffix?: string): HTMLElement {
@@ -105,6 +107,8 @@ export function renderToday(
   stats: TodayStats,
   saved: SavedNote,
   log: DayLog,
+  broken: BrokenStreak | null,
+  onOpenSkeleton: (() => void) | null,
   reload: () => void,
 ): void {
   clear(host);
@@ -119,6 +123,15 @@ export function renderToday(
     host,
     head(stats),
     trouble,
+    // Artboard 08 state 5. It sits above the day's work because it is what
+    // the screen is about today; `longest` stays in the stat row above it.
+    broken
+      ? renderBrokenStreak(
+          broken,
+          () => void setFloorDay(true).then(reload),
+          onOpenSkeleton,
+        )
+      : null,
     el(
       "div",
       { class: "today__card" },

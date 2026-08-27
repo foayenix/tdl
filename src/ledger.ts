@@ -140,6 +140,26 @@ export async function record(id: number): Promise<Record> {
   return invoke<Record>("ledger_record", { id });
 }
 
+export type BrokenStreak = {
+  ended_on: string;
+  length: number;
+  missed: string[];
+};
+
+export async function brokenStreak(): Promise<BrokenStreak | null> {
+  return invoke<BrokenStreak | null>("ledger_broken_streak");
+}
+
+export type QueuePosition = { position: number; total: number };
+
+export async function queuePosition(id: number): Promise<QueuePosition | null> {
+  return invoke<QueuePosition | null>("ledger_queue_position", { id });
+}
+
+export async function nextSkeleton(): Promise<number | null> {
+  return invoke<number | null>("ledger_next_skeleton");
+}
+
 export type BoundReference = {
   position: number;
   reference_id: number;
@@ -259,6 +279,28 @@ export type FetchResult = {
 
 export async function fetchReference(doi: string): Promise<FetchResult> {
   return invoke<FetchResult>("ledger_fetch_reference", { doi });
+}
+
+export type Candidate = {
+  name: string | null;
+  gbif_key: number | null;
+  confidence: number;
+};
+
+export type Resolution = {
+  accepted: boolean;
+  reason: string;
+  confidence: number | null;
+  name: string | null;
+  candidates: Candidate[];
+};
+
+export async function resolveName(name: string, accept = false): Promise<Resolution> {
+  return invoke<Resolution>("ledger_resolve_name", { name, accept });
+}
+
+export async function setNameByHand(id: number, name: string): Promise<Record> {
+  return invoke<Record>("ledger_set_name_by_hand", { id, name });
 }
 
 export const OUTPUT_KINDS = ["paper", "talk", "long-form", "release", "note"] as const;

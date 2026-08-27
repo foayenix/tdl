@@ -85,3 +85,57 @@ fn a_silent_sidecar_still_produces_a_line() {
     assert!(!result.ok);
     assert_eq!(result.message, "the sidecar said nothing");
 }
+
+// ── artboard 08 state 4: what `ledger resolve --json` says ──────────────
+
+use ledger_app::parse_resolution;
+
+#[test]
+fn a_below_threshold_match_reports_its_candidates() {
+    // The shape `ledger/commands/resolve.py` prints.
+    let stdout = r#"[
+      {
+        "monograph_id": 4,
+        "name": "Sutherlandia frutescens",
+        "accepted": false,
+        "reason": "below the 0.90 threshold",
+        "confidence": 0.42,
+        "gbif_key": null,
+        "candidates": [
+          {"name": "PLACEHOLDER CANDIDATE TWO", "gbif_key": 5000002, "confidence": 0.38},
+          {"name": "PLACEHOLDER CANDIDATE THREE", "gbif_key": 5000003, "confidence": 0.31}
+        ]
+      }
+    ]"#;
+
+    let resolution = parse_resolution(stdout);
+
+    assert!(!resolution.accepted);
+    assert_eq!(resolution.reason, "below the 0.90 threshold");
+    assert_eq!(resolution.confidence, Some(0.42));
+    assert_eq!(resolution.candidates.len(), 2);
+    assert_eq!(resolution.candidates[0].gbif_key, Some(5000002));
+    assert_eq!(resolution.candidates[0].confidence, 0.38);
+}
+
+#[test]
+fn a_resolved_name_carries_no_candidates() {
+    let stdout = r#"[{"monograph_id": 1, "name": "Khaya senegalensis", "accepted": true,
+                      "reason": "resolved", "confidence": 0.97, "gbif_key": 3190368,
+                      "candidates": []}]"#;
+
+    let resolution = parse_resolution(stdout);
+
+    assert!(resolution.accepted);
+    assert!(resolution.candidates.is_empty());
+    assert_eq!(resolution.name.as_deref(), Some("Khaya senegalensis"));
+}
+
+#[test]
+fn a_sidecar_that_fell_over_still_produces_a_reason() {
+    let resolution = parse_resolution("Traceback (most recent call last):\n  File ...");
+
+    assert!(!resolution.accepted);
+    assert_eq!(resolution.reason, "Traceback (most recent call last):");
+    assert!(resolution.candidates.is_empty());
+}

@@ -408,6 +408,198 @@ pub fn record(path: &Path, id: i64) -> Result<Record> {
         })
 }
 
+/// One GBIF candidate, as artboard 08 state 4 lists them.
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
+pub struct Candidate {
+    pub name: Option<String>,
+    pub gbif_key: Option<i64>,
+    pub confidence: f64,
+}
+
+/// What `ledger resolve --json` said about one record.
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
+pub struct Resolution {
+    pub accepted: bool,
+    pub reason: String,
+    pub confidence: Option<f64>,
+    pub name: Option<String>,
+    pub candidates: Vec<Candidate>,
+}
+
+/// Read the sidecar's answer. The CLI prints an array, one entry per record.
+pub fn parse_resolution(stdout: &str) -> Resolution {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout.trim()) else {
+        return Resolution {
+            reason: stdout
+                .trim()
+                .lines()
+                .next()
+                .unwrap_or("the sidecar said nothing")
+                .to_string(),
+            ..Resolution::default()
+        };
+    };
+
+    let first = value.get(0).unwrap_or(&value);
+
+    let candidates = first
+        .get("candidates")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .map(|item| Candidate {
+                    name: item
+                        .get("name")
+                        .and_then(serde_json::Value::as_str)
+                        .map(str::to_string),
+                    gbif_key: item.get("gbif_key").and_then(serde_json::Value::as_i64),
+                    confidence: item
+                        .get("confidence")
+                        .and_then(serde_json::Value::as_f64)
+                        .unwrap_or(0.0),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    Resolution {
+        accepted: first
+            .get("accepted")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false),
+        reason: first
+            .get("reason")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("no answer")
+            .to_string(),
+        confidence: first.get("confidence").and_then(serde_json::Value::as_f64),
+        name: first
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string),
+        candidates,
+    }
+}
+
+/// `Enter name by hand` — artboard 08 state 4's second action.
+///
+/// A person deciding is not the machine guessing, which is what invariant 2
+/// guards against. The identifiers stay NULL, so the record stays in the queue
+/// until something confirms it.
+pub fn set_name_by_hand(path: &Path, monograph_id: i64, name: &str) -> Result<Record> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err(Error::Refused("a monograph needs a name".into()));
+    }
+
+    let connection = open_checked(path)?;
+    connection.execute(
+        "UPDATE monograph SET accepted_name = ?2, last_touched = datetime('now')
+         WHERE id = ?1",
+        rusqlite::params![monograph_id, name],
+    )?;
+
+    record(path, monograph_id)
+}
+
+/// Artboard 08 state 5 — a streak that has been broken.
+///
+/// No guilt copy, no flame, no offer to restore it. The days are listed
+/// plainly and counting resumes at 1 (BUILD.md §8).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BrokenStreak {
+    /// The last day of the run that ended.
+    pub ended_on: String,
+    /// How long that run was.
+    pub length: i64,
+    /// The days since, in order, none of which has an entry.
+    pub missed: Vec<String>,
+}
+
+/// The break, or None when the streak is live or there is nothing to break.
+pub fn broken_streak(path: &Path) -> Result<Option<BrokenStreak>> {
+    let connection = open_checked(path)?;
+
+    if current_streak(&connection)? > 0 {
+        return Ok(None);
+    }
+
+    let last: Option<String> =
+        connection.query_row("SELECT max(date) FROM entry", [], |row| row.get(0))?;
+    let Some(ended_on) = last else {
+        return Ok(None);
+    };
+
+    let length = count(&connection, RUN_LENGTH)?;
+
+    let mut statement = connection.prepare(
+        "WITH RECURSIVE gap(day) AS (
+             SELECT date(?1, '+1 day')
+             UNION ALL
+             SELECT date(day, '+1 day') FROM gap WHERE day < date('now')
+         )
+         SELECT day FROM gap
+         WHERE day NOT IN (SELECT date FROM entry)
+         ORDER BY day",
+    )?;
+
+    let rows = statement.query_map([&ended_on], |row| row.get::<_, String>(0))?;
+    let missed: Vec<String> = rows.collect::<std::result::Result<_, _>>()?;
+
+    Ok(Some(BrokenStreak {
+        ended_on,
+        length,
+        missed,
+    }))
+}
+
+/// Artboard 08 state 4 — `queue 3 of 7`.
+///
+/// The queue is `status = 'skeleton' AND gbif_key IS NULL`, ordered by
+/// `first_written`; there is no queue table (session 09).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct QueuePosition {
+    pub position: i64,
+    pub total: i64,
+}
+
+pub fn queue_position(path: &Path, monograph_id: i64) -> Result<Option<QueuePosition>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT id FROM monograph
+         WHERE status = 'skeleton' AND gbif_key IS NULL
+         ORDER BY first_written, id",
+    )?;
+
+    let rows = statement.query_map([], |row| row.get::<_, i64>(0))?;
+    let queue: Vec<i64> = rows.collect::<std::result::Result<_, _>>()?;
+
+    Ok(queue
+        .iter()
+        .position(|id| *id == monograph_id)
+        .map(|index| QueuePosition {
+            position: index as i64 + 1,
+            total: queue.len() as i64,
+        }))
+}
+
+/// The next skeleton waiting to be written — artboard 08 state 5's
+/// `Open next skeleton`.
+pub fn next_skeleton(path: &Path) -> Result<Option<i64>> {
+    let connection = open_checked(path)?;
+
+    Ok(connection
+        .query_row(
+            "SELECT id FROM monograph WHERE status = 'skeleton'
+             ORDER BY first_written, id LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .ok())
+}
+
 /// A reference bound to this record, numbered **within the record**.
 ///
 /// Artboard 05 labels them `R1`–`Rn` and the summary cites `sources R1, R2,

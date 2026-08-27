@@ -1436,6 +1436,65 @@ mocks**: first run at 0 rows, one record at n = 1, the unresolved-name queue,
 the broken streak, and no results. `nearest_name` has been waiting since
 session 22 for state 6.
 
+### session 28 — artboard 08's states, as real renders
+
+**Landed**
+
+- Rust: `broken_streak()`, `queue_position()`, `next_skeleton()`,
+  `set_name_by_hand()`, `parse_resolution()`, and a `ledger_resolve_name`
+  sidecar command.
+- `src/screens/states.ts` — states **1, 2, 4, 5, 6**. State 3 (overload) is
+  v0.2 and is not here.
+- 3 more Rust tests (62 in total).
+
+`just check` passes: 282 pytest, 62 cargo, tsc clean.
+
+**They are renders, not mocks.** Each state is what its screen does when the
+database is in that shape, and each was screenshotted against a database
+actually in it:
+
+| state | how it was produced |
+|---|---|
+| 1 · first run | a freshly migrated, empty ledger |
+| 2 · one record | a ledger with exactly one monograph and one indication |
+| 4 · unresolved name | the demo record, whose `gbif_key` is genuinely NULL |
+| 5 · broken streak | a 41-day run ending four days ago |
+| 6 · no results | `Sutherlandia frutescens` typed into the real find box |
+
+State 5 came out reading *"The 41-day streak ended on 2026-08-23. 4 days
+without an entry."* with the four days listed, `Log a floor day — 20 min`,
+`Open next skeleton`, `counting resumes at 1`, and `longest 41` still in the
+stat row above. **No flame, no "don't break the chain", no offer to restore
+it** — §8's guardrail, kept.
+
+State 6 reads *"No monograph, no reference, no output mentions this name."*,
+`searched 9 monographs · 4 references · 1 output · 0 ms`, `nearest in corpus:
+Vernonia amygdalina · edit distance 16`, and `New — Sutherlandia frutescens`
+with `resolves against GBIF on save`. `nearest_name` had been waiting since
+session 22.
+
+**State 4 is the whole of state 4, not a sketch**
+
+It lists GBIF's candidates with their keys and scores and offers all three
+actions the artboard names: `Accept top match`, `Enter name by hand`,
+`Keep in queue`. Accepting calls the sidecar with `--accept`; entering by hand
+writes only `accepted_name` and leaves the identifiers NULL, so the record
+stays in the queue until something confirms it.
+
+The candidate list needs GBIF, which is policy-blocked here, so it is the one
+part of the five states without a screenshot. It has three tests against the
+**actual JSON `ledger/commands/resolve.py` prints** — including the
+below-threshold shape with two candidates.
+
+**`N` opens a skeleton, because state 1 promises it does.** It is ignored while
+an input, textarea or select has focus: a field owns its own keystrokes.
+
+**Next session starts at:** BUILD.md §6, week 6, item **29** — The Wall.
+`27 outputs · 2024-01-02 → 2026-06-18 · newest first`, kind counts across the
+top, grouped by year newest-first. Outputs with no plant read `whole corpus` or
+`method, no plant` — upright and muted, never italic. **No pagination, no
+load-more: the length of the scroll is the point.**
+
 ---
 
 ## Open questions

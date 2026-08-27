@@ -1280,3 +1280,165 @@
   font-size: var(--size-emphasis);
   color: var(--primary);
 }
+
+/* ── artboard 08 · states ───────────────────────────────────────────── */
+/* These are what the screens do when the database is in these shapes, not
+   separate pages that imitate them. */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  align-items: flex-start;
+  padding: var(--space-16) var(--space-18);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+}
+
+.state__count {
+  color: var(--ink);
+}
+
+.state__label {
+  color: var(--muted);
+}
+
+.state__prose {
+  margin: 0;
+  max-width: var(--prose-max-width);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  color: var(--ink);
+}
+
+.state__sentence {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  color: var(--ink);
+}
+
+.state__command {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  background: var(--inset);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  padding: var(--space-8) var(--space-12);
+  font-family: var(--font-mono);
+  font-size: var(--size-numeric);
+  color: var(--ink);
+}
+
+.state__prompt {
+  color: var(--muted);
+}
+
+.state__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.state__hint,
+.state__meta {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+}
+
+.state__value {
+  color: var(--ink);
+}
+
+.state__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+}
+
+.state__title {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.state__queue {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* A name nobody has confirmed is a caution, not an error. */
+.state--unresolved {
+  margin: var(--space-12) var(--space-28) 0;
+  background: var(--warn-row);
+  border-color: var(--secondary-ring);
+}
+
+/* No flame, no "don't break the chain", no offer to restore it. */
+.state--broken {
+  border-color: var(--hairline);
+}
+
+.state__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6) var(--space-16);
+}
+
+.state__day {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.state__day-date {
+  font-family: var(--font-mono);
+  font-size: var(--size-numeric);
+  color: var(--ink);
+}
+
+.state__day-name {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.state--first-run {
+  gap: var(--space-12);
+}
+
+.state--first-run .state__count {
+  line-height: 1;
+}
+
+.state__candidates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--prose-max-width);
+}
+
+.state__candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 48px;
+  gap: var(--space-12);
+  align-items: baseline;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--secondary-ring);
+  font-family: var(--font-sans);
+  font-size: var(--size-table-cell);
+}
+
+.state__candidate:last-child {
+  border-bottom: 0;
+}
