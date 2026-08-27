@@ -7,7 +7,8 @@ import { append, clear, el } from "../dom";
 import { evidenceChip, severityChip, statusChip } from "../chips";
 import { EVIDENCE, EVIDENCE_LABEL, evidenceCode, type Evidence } from "../evidence";
 import { SEVERITY } from "../evidence";
-import { claims, type Claim, type Record } from "../ledger";
+import { benefitSharing, claims, sectionSources, type Claim, type Record } from "../ledger";
+import { renderBenefitSharing, renderProse } from "./prose";
 import { renderSection, type SectionSpec } from "./section";
 import { COLUMNS } from "../table";
 
@@ -133,17 +134,18 @@ function summaryStrip(monograph: Record, onSave: () => void): HTMLElement {
     );
   }
 
-  // Nothing on the record is editable until sessions 24–27, so there is
-  // nothing to save. The button is in its place and says why it is off,
-  // rather than being a control that silently does nothing.
-  const editable = false;
+  // Artboard 05 puts a `Save monograph` here, which implies a form: edit, then
+  // commit. Every edit on this screen writes through at the moment it is made —
+  // an added claim row, a saved prose section — so there is never anything
+  // pending for it to commit. It stays in its place and says so rather than
+  // pretending to do work. See STATE.md, session 26: this is a design question.
   const save = el(
     "button",
     {
       type: "button",
       class: "button-quiet button-quiet--accent record__save",
-      disabled: !editable,
-      title: editable ? undefined : "nothing on this record is editable yet",
+      disabled: true,
+      title: "every change on this record is written as you make it",
     },
     "Save monograph",
   );
@@ -231,6 +233,9 @@ const SECTIONS: SectionSpec[] = [
 /** Which section, if any, has its inline add row open. */
 let addingIn: string | null = null;
 
+/** Which prose section, if any, is being edited. */
+let editingProse: string | null = null;
+
 export async function renderRecord(
   host: HTMLElement,
   monograph: Record,
@@ -249,6 +254,29 @@ export async function renderRecord(
   append(body, column);
 
   append(host, header(monograph, onSave), trouble, body);
+
+  // Artboard 05's order: summary, then the claim sections, then preparation
+  // and benefit-sharing.
+  const summarySources = await sectionSources(monograph.id, "summary").catch(() => []);
+  column.appendChild(
+    renderProse(
+      {
+        field: "summary",
+        title: "summary",
+        text: monograph.summary,
+        sources: summarySources,
+        rewritten: monograph.summary_rewritten_at,
+      },
+      monograph.id,
+      editingProse === "summary",
+      () => {
+        editingProse = editingProse === "summary" ? null : "summary";
+        reload();
+      },
+      reload,
+      say,
+    ),
+  );
 
   for (const spec of SECTIONS) {
     let rows: Claim[] = [];
@@ -272,6 +300,44 @@ export async function renderRecord(
           addingIn = null;
           reload();
         },
+        say,
+      ),
+    );
+  }
+
+  const preparationSources = await sectionSources(monograph.id, "preparation").catch(() => []);
+  column.appendChild(
+    renderProse(
+      {
+        field: "preparation",
+        title: "preparation",
+        text: monograph.preparation,
+        sources: preparationSources,
+      },
+      monograph.id,
+      editingProse === "preparation",
+      () => {
+        editingProse = editingProse === "preparation" ? null : "preparation";
+        reload();
+      },
+      reload,
+      say,
+    ),
+  );
+
+  // Benefit-sharing is not optional chrome; it appears on every record.
+  const consent = await benefitSharing(monograph.id).catch(() => null);
+  if (consent) {
+    column.appendChild(
+      renderBenefitSharing(
+        monograph.id,
+        consent,
+        editingProse === "benefit_sharing",
+        () => {
+          editingProse = editingProse === "benefit_sharing" ? null : "benefit_sharing";
+          reload();
+        },
+        reload,
         say,
       ),
     );

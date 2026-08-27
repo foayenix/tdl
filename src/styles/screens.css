@@ -1025,3 +1025,61 @@
 .source-ref {
   color: var(--primary);
 }
+
+/* ── artboard 05 · prose sections ───────────────────────────────────── */
+
+.prose__body {
+  margin: 0;
+  max-width: var(--prose-max-width);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.prose__body--empty {
+  color: var(--muted);
+}
+
+.prose__meta {
+  display: flex;
+  gap: var(--space-16);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--muted);
+}
+
+.prose__on-file {
+  color: var(--positive);
+}
+
+.prose__field {
+  max-width: var(--prose-max-width);
+  min-height: 120px;
+  resize: none;
+  background: var(--inset);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  padding: 10px var(--space-12);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  color: var(--ink);
+}
+
+.prose__field:focus-visible {
+  outline: var(--focus-ring-width) solid var(--primary);
+  outline-offset: var(--focus-ring-offset);
+  border-color: var(--primary-ring);
+}
+
+.prose__fields {
+  display: flex;
+  gap: var(--space-8);
+  max-width: var(--prose-max-width);
+}
+
+.prose__fields .section__field {
+  flex: 1;
+}

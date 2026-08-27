@@ -1339,6 +1339,54 @@ sections: summary (74ch, `sources R1, R2, R6`, `rewritten <date>`), preparation
 MTA-2025-014 · expires 2028-06`). Benefit-sharing is **not optional chrome**:
 it appears on every monograph, and its absence is already a corpus filter flag.
 
+### session 26 — the prose sections: summary, preparation, benefit-sharing
+
+**Landed**
+
+- Rust: `benefit_sharing()`, `save_benefit_sharing()`, `save_prose()`,
+  `section_sources()`.
+- `src/screens/prose.ts` — prose at 74ch, `sources R2, R3` in `primary`,
+  `rewritten 2026-08-27`, and in-place editing.
+- Benefit-sharing with its narrative, `agreement on file · MTA-2025-014 ·
+  expires 2028-06`.
+
+`just check` passes: 282 pytest, 56 cargo, tsc clean.
+
+**Rewriting the summary stamps its date; writing the same text again does not.**
+That rule already existed on the Python side (session 04) and now exists on the
+Rust side, for the same reason: `rewritten 2026-08-27` has to mean the day the
+words changed, or it is decoration.
+
+**Benefit-sharing appears whether or not there is one**
+
+It is not optional chrome — §8 says so, and its absence is already a corpus
+filter flag. A record with no agreement gets the section anyway, reading *"No
+consent, attribution or agreement is recorded for this record"* with
+`no agreement recorded` in `secondary` beside the heading and a
+`+ record consent` button. Leaving the section off when it is empty would make
+the gap invisible, which is exactly backwards for the one thing on this screen
+that governs a real obligation.
+
+**`Save monograph` is disabled, and this is a design question for you**
+
+Artboard 05 puts it in the header strip, which implies a form: edit, then
+commit. But every edit on this screen writes through the moment it is made — an
+added claim row on `enter`, a prose section on `save`. So there is never
+anything pending for a global save to commit.
+
+It stays in its place with the reason in its title
+(*"every change on this record is written as you make it"*) rather than being a
+button that does nothing. If you want deferred save semantics instead — edit
+freely, commit or discard — that is a real and defensible design, and it is a
+change to how the whole record behaves, not a button. Open question below.
+
+**Next session starts at:** BUILD.md §6, week 5, item **27** — the references
+section (`R1`–`Rn`, citation, DOI, read state), the 224px sticky rail (section
+jump list with counts, unsourced counts in `secondary`, `cited by your
+outputs`, `3 references queued, unread →`), and the reviewed-status block at
+the foot of the record. That block is DESIGN.md §6's closing line and the
+database already enforces what it says.
+
 ---
 
 ## Open questions
@@ -1404,6 +1452,12 @@ answer them alone.
   helpers and the evidence ramp are pure functions encoding real rules, and
   nothing checks them. Adding `vitest` is a dependency and a sixth command in
   `just check`; §7 asks for neither. Not added.
+
+- **New (26):** artboard 05's `Save monograph` implies a form — edit, then
+  commit — but every edit on the record writes through immediately, so there is
+  nothing pending for it to save. It is rendered disabled with that reason.
+  Deferred save is a defensible alternative; it changes how the whole record
+  behaves, so it is yours to choose.
 
 ---
 

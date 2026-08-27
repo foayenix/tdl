@@ -8,9 +8,10 @@ use std::time::{Duration, Instant};
 use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_claim, add_output, claims, corpus, day_log, default_path, nav_counts, nearest_name,
-    note_for_today, open_monograph, parse_fetch, record, save_note, search, set_floor_day, status,
-    today_stats, Claim, Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult,
+    add_claim, add_output, benefit_sharing, claims, corpus, day_log, default_path, nav_counts,
+    nearest_name, note_for_today, open_monograph, parse_fetch, record, save_benefit_sharing,
+    save_note, save_prose, search, section_sources, set_floor_day, status, today_stats,
+    BenefitSharing, Claim, Corpus, DayLog, FetchResult, NavCounts, Record, SavedNote, SearchResult,
     Status, TodayStats,
 };
 
@@ -113,6 +114,32 @@ fn ledger_corpus() -> std::result::Result<Corpus, String> {
 }
 
 #[tauri::command]
+fn ledger_benefit_sharing(id: i64) -> std::result::Result<BenefitSharing, String> {
+    benefit_sharing(&ledger_path(), id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_save_benefit_sharing(
+    id: i64,
+    narrative: Option<String>,
+    agreement_ref: Option<String>,
+    expires: Option<String>,
+) -> std::result::Result<BenefitSharing, String> {
+    save_benefit_sharing(&ledger_path(), id, narrative, agreement_ref, expires)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_save_prose(id: i64, field: String, text: String) -> std::result::Result<Record, String> {
+    save_prose(&ledger_path(), id, &field, &text).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn ledger_section_sources(id: i64, section: String) -> std::result::Result<Vec<i64>, String> {
+    section_sources(&ledger_path(), id, &section).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_claims(id: i64, table: String) -> std::result::Result<Vec<Claim>, String> {
     claims(&ledger_path(), id, &table).map_err(|error| error.to_string())
 }
@@ -181,7 +208,11 @@ fn main() {
             ledger_nearest_name,
             ledger_record,
             ledger_claims,
-            ledger_add_claim
+            ledger_add_claim,
+            ledger_benefit_sharing,
+            ledger_save_benefit_sharing,
+            ledger_save_prose,
+            ledger_section_sources
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

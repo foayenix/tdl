@@ -140,6 +140,40 @@ export async function record(id: number): Promise<Record> {
   return invoke<Record>("ledger_record", { id });
 }
 
+export type BenefitSharing = {
+  narrative: string | null;
+  agreement_ref: string | null;
+  expires: string | null;
+  consent_recorded_at: string | null;
+  present: boolean;
+};
+
+export async function benefitSharing(id: number): Promise<BenefitSharing> {
+  return invoke<BenefitSharing>("ledger_benefit_sharing", { id });
+}
+
+export async function saveBenefitSharing(
+  id: number,
+  narrative: string | null,
+  agreementRef: string | null,
+  expires: string | null,
+): Promise<BenefitSharing> {
+  return invoke<BenefitSharing>("ledger_save_benefit_sharing", {
+    id,
+    narrative,
+    agreementRef,
+    expires,
+  });
+}
+
+export async function saveProse(id: number, field: string, text: string): Promise<Record> {
+  return invoke<Record>("ledger_save_prose", { id, field, text });
+}
+
+export async function sectionSources(id: number, section: string): Promise<number[]> {
+  return invoke<number[]>("ledger_section_sources", { id, section });
+}
+
 export type Claim = {
   id: number;
   cells: (string | null)[];

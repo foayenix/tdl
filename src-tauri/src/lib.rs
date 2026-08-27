@@ -408,6 +408,136 @@ pub fn record(path: &Path, id: i64) -> Result<Record> {
         })
 }
 
+/// The benefit-sharing record. One row per monograph, and not optional chrome:
+/// it records consent, named attribution and the agreement under which
+/// vernacular and preparation knowledge was collected (DESIGN.md §8).
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct BenefitSharing {
+    pub narrative: Option<String>,
+    pub agreement_ref: Option<String>,
+    pub expires: Option<String>,
+    pub consent_recorded_at: Option<String>,
+    /// False when the record has no benefit-sharing row at all — which is a
+    /// corpus filter flag, so it is a fact worth carrying rather than inferring.
+    pub present: bool,
+}
+
+pub fn benefit_sharing(path: &Path, monograph_id: i64) -> Result<BenefitSharing> {
+    let connection = open_checked(path)?;
+
+    let found = connection
+        .query_row(
+            "SELECT narrative, agreement_ref, expires, consent_recorded_at
+             FROM benefit_sharing WHERE monograph_id = ?1",
+            [monograph_id],
+            |row| {
+                Ok(BenefitSharing {
+                    narrative: row.get(0)?,
+                    agreement_ref: row.get(1)?,
+                    expires: row.get(2)?,
+                    consent_recorded_at: row.get(3)?,
+                    present: true,
+                })
+            },
+        )
+        .ok();
+
+    Ok(found.unwrap_or_default())
+}
+
+pub fn save_benefit_sharing(
+    path: &Path,
+    monograph_id: i64,
+    narrative: Option<String>,
+    agreement_ref: Option<String>,
+    expires: Option<String>,
+) -> Result<BenefitSharing> {
+    let connection = open_checked(path)?;
+
+    connection.execute(
+        "INSERT INTO benefit_sharing (monograph_id, narrative, agreement_ref, expires)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(monograph_id) DO UPDATE SET
+             narrative = ?2, agreement_ref = ?3, expires = ?4",
+        rusqlite::params![
+            monograph_id,
+            blank_to_null(narrative),
+            blank_to_null(agreement_ref),
+            blank_to_null(expires),
+        ],
+    )?;
+
+    touch(&connection, monograph_id)?;
+    benefit_sharing(path, monograph_id)
+}
+
+fn blank_to_null(value: Option<String>) -> Option<String> {
+    value
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
+}
+
+fn touch(connection: &Connection, monograph_id: i64) -> Result<()> {
+    connection.execute(
+        "UPDATE monograph SET last_touched = datetime('now') WHERE id = ?1",
+        [monograph_id],
+    )?;
+    Ok(())
+}
+
+/// Write one of the record's prose fields.
+///
+/// Rewriting the summary stamps `summary_rewritten_at`; writing the same text
+/// again does not, so the date means what it says.
+pub fn save_prose(path: &Path, monograph_id: i64, field: &str, text: &str) -> Result<Record> {
+    if !matches!(field, "summary" | "preparation") {
+        return Err(Error::Refused(format!("{field} is not a prose field")));
+    }
+
+    let connection = open_checked(path)?;
+    let value = blank_to_null(Some(text.to_string()));
+
+    if field == "summary" {
+        let before: Option<String> = connection.query_row(
+            "SELECT summary FROM monograph WHERE id = ?1",
+            [monograph_id],
+            |row| row.get(0),
+        )?;
+
+        if before != value {
+            connection.execute(
+                "UPDATE monograph SET summary = ?2, summary_rewritten_at = date('now'),
+                 last_touched = datetime('now') WHERE id = ?1",
+                rusqlite::params![monograph_id, value],
+            )?;
+            return record(path, monograph_id);
+        }
+    }
+
+    connection.execute(
+        &format!(
+            "UPDATE monograph SET \"{field}\" = ?2, last_touched = datetime('now')
+             WHERE id = ?1"
+        ),
+        rusqlite::params![monograph_id, value],
+    )?;
+
+    record(path, monograph_id)
+}
+
+/// The reference ids cited in one section — artboard 05's `sources R1, R2, R6`.
+pub fn section_sources(path: &Path, monograph_id: i64, section: &str) -> Result<Vec<i64>> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "SELECT DISTINCT reference_id FROM monograph_reference
+         WHERE monograph_id = ?1 AND section = ?2 ORDER BY reference_id",
+    )?;
+
+    let rows = statement.query_map(rusqlite::params![monograph_id, section], |row| row.get(0))?;
+    Ok(rows.collect::<std::result::Result<_, _>>()?)
+}
+
 /// A claim row as the record shows it. Every one carries a source, and a row
 /// without one is the rule the whole screen is built around (DESIGN.md §6).
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
