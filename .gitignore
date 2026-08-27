@@ -28,3 +28,6 @@ app/dist/
 
 # macos
 .DS_Store
+
+# frontend build output
+dist/

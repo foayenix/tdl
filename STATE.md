@@ -3,7 +3,7 @@
 Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Release target:** v0.1 — five screens, light theme only, by 5 Oct.
-**Now:** week 3, shell and components — item 12 next.
+**Now:** week 3, shell and components — item 13 next.
 
 ---
 
@@ -29,11 +29,9 @@ Where the build actually is. Updated at the end of every session (BUILD.md §0).
 
 **Deviations from the contract — deliberate, listed for review**
 
-1. **`just check` skips the cargo steps while `src-tauri/` does not exist.**
-   §7 lists four commands unconditionally, but the Rust crate does not arrive
-   until session 12, and a `check` that cannot pass on day one is worse than
-   one that reports what it ran. The guard is `[ -d src-tauri ]` — it turns
-   itself off the moment session 12 lands. Revisit then.
+1. ~~**`just check` skips the cargo steps while `src-tauri/` does not exist.**~~
+   **Resolved in session 12**: the crate exists, the guard is gone, and all four
+   §7 commands now run unconditionally and in order.
 2. **`just check` prefers `.venv/bin/python` over `python3`.** This container's
    `python3` is 3.11; BUILD.md §3 pins 3.12+. `just venv` builds a 3.12 venv
    with pytest and ruff. On the target Mac, where `python3` is already 3.12+,
@@ -596,6 +594,81 @@ is the last §7 test outstanding. Note for that session: `foreign_keys = ON` is
 per-connection and the Rust side must set it (session 02), and so must
 `busy_timeout`.
 
+### session 12 — the window opens, and both processes write to one file
+
+**Landed**
+
+- `src-tauri/` — Tauri v2 crate, **compiled and tested**, not just written.
+  `src/lib.rs` is the core with no Tauri in it: `open()` (WAL,
+  `busy_timeout = 5000`, `foreign_keys = ON`), `user_version()`,
+  `open_checked()` and its errors, `status()`.
+- `src/main.rs` — the window, 1440 × 1024 to match the artboards, one
+  `ledger_status` command. `capabilities/default.json` grants
+  `shell:allow-execute` for the sidecar and nothing else; the frontend holds no
+  shell permission, exactly as §3 requires.
+- **§7 test 2, concurrent access** — an open Rust connection and ten `ledger`
+  subprocess writes interleaved against one file, with the app reading back
+  each CLI write. No `database is locked`. Plus five more Rust tests: the
+  pragmas, the schema guard both ways, a missing file, and the sourcing
+  invariant holding against the Rust side too.
+- Frontend: Vite + TypeScript, `src/index.html`, `src/ledger.ts`, `src/main.ts`.
+  The window currently shows the path, the size and `schema v4` — that is the
+  whole of session 12's screen, and it proves the connection is real.
+
+`just check` passes end to end in about six seconds: ruff, 242 pytest, cargo
+fmt, cargo clippy `-D warnings` on all targets, 6 cargo tests, `tsc --noEmit`.
+
+**Every §7 test now exists.** Test 2 was the last one outstanding.
+
+**The decision this session owed: vanilla DOM, not Preact**
+
+The five v0.1 screens are document-shaped, not app-shaped — dense tables and a
+long record, rendered from a query. The interactive parts are a filter rail
+whose state lives in the URL hash, an autosaving note, and inline row adds.
+None of that needs a VDOM, and every other line of §3 pushes the same way: no
+React, no Tailwind, no component library, hand-written CSS. Vanilla keeps the
+dependency count at one.
+
+If session 24's inline row editing turns into a mess, that is the moment to
+revisit — Preact is a one-file change to the render layer, not a rewrite.
+
+**Three additions to record**
+
+1. **`@tauri-apps/api`** is a new dependency. It replaces reaching for
+   `window.__TAURI__`, which needs `withGlobalTauri` and gives up type safety
+   at the one boundary where the frontend talks to Rust. `vite` and
+   `typescript` are the build, named in §3.
+2. **`just check` now also runs `tsc --noEmit`** — a fifth command §7 does not
+   list. From session 13 on the frontend is the work, and without it nothing
+   checks it. The four §7 commands run first, in order, unchanged.
+3. **`just sidecar`** writes a development stand-in at
+   `src-tauri/binaries/ledger-<triple>` — a two-line shim that runs the CLI
+   from source. `tauri.conf.json` declares `externalBin` as §3 shows, so
+   *every* cargo invocation needs that file to exist, and the real one is a
+   PyInstaller freeze that does not arrive until session 30. `check` creates it
+   if it is missing.
+
+**Two things are placeholders, deliberately**
+
+- **The icons are flat `#14705B` squares.** An icon is artwork, not
+  infrastructure; inventing one would be inventing branding. `generate_context!`
+  will not compile without it.
+- **`cargo tauri` CLI is not installed here**, so the scaffold was written by
+  hand rather than by `cargo tauri init`. The layout is the standard one and
+  the crate builds. Session 30 needs the CLI for `cargo tauri build`.
+
+**Environment note.** Tauri needs `libwebkit2gtk-4.1-dev` on Linux; it was
+missing and is now installed in this container. On the target Mac none of that
+applies. The Rust core itself has no Tauri in it, so it would have compiled
+and tested either way — that separation is worth keeping.
+
+**Next session starts at:** BUILD.md §6, week 3, item **13** — artboard 01,
+every token in `DESIGN.md` §1 as a CSS variable, fonts self-hosted as woff2 in
+`src/fonts/`. **Fraunces and IBM Plex are SIL OFL and are fetched from Google
+Fonts, which this container is policy-blocked from** — expect the same
+situation as Crossref and GBIF, and expect to have to check whether the font
+files can be obtained at all before writing CSS against them.
+
 ---
 
 ## Open questions
@@ -603,7 +676,8 @@ per-connection and the Rust side must set it (session 02), and so must
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not
 answer them alone.
 
-- Vanilla DOM vs Preact — decide session 12, record the answer here.
+- ~~Vanilla DOM vs Preact~~ — **decided session 12: vanilla DOM.** Reasoning in
+  that entry. Revisit only if session 24's inline editing turns messy.
 - Whether `reference` stores a PDF path, and whether it points into a Zotero
   library or a plain folder.
 - Whether The Wall includes unpublished drafts, and how they are marked.

@@ -4,6 +4,9 @@
 # so a machine whose `python3` is older still runs the checks on the right one.
 py := if path_exists(".venv/bin/python") == "true" { ".venv/bin/python" } else { "python3" }
 
+# The target triple the sidecar filename carries (BUILD.md §3).
+triple := `rustc --print host-tuple 2>/dev/null || echo unknown`
+
 default:
     @just --list
 
@@ -17,12 +20,14 @@ check:
         ruff check ledger/
     fi
     {{py}} -m pytest ledger/tests -q
-    # The Rust core arrives in session 12. Until src-tauri/ exists there is
-    # nothing for cargo to check, so these steps are skipped rather than failed.
-    if [ -d src-tauri ]; then
-        cargo fmt --check --manifest-path src-tauri/Cargo.toml
-        cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
-        cargo test --manifest-path src-tauri/Cargo.toml
+    just sidecar
+    cargo fmt --check --manifest-path src-tauri/Cargo.toml
+    cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+    cargo test --manifest-path src-tauri/Cargo.toml
+    # Not in BUILD.md §7's four commands. Added in session 12 because from
+    # here on the frontend is the work, and without this nothing checks it.
+    if [ -d node_modules ]; then
+        npx tsc --noEmit
     fi
 
 # Create the development virtualenv the checks run in.
@@ -50,3 +55,20 @@ restore db out="/tmp/ledger-restored.sqlite":
 hooks:
     git config core.hooksPath .githooks
     @echo "core.hooksPath = .githooks"
+
+# A development stand-in for the frozen sidecar.
+#
+# tauri.conf.json declares `externalBin`, so every cargo invocation needs the
+# file to exist — but the real one is a PyInstaller freeze and does not arrive
+# until session 30. This shim runs the CLI from source and behaves identically
+# from Rust's side. It lives in src-tauri/binaries/, which is gitignored.
+sidecar:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p src-tauri/binaries
+    target="src-tauri/binaries/ledger-{{triple}}"
+    if [ ! -x "$target" ]; then
+        printf '#!/usr/bin/env bash\nexec %q -m ledger "$@"\n' "$(pwd)/{{py}}" > "$target"
+        chmod +x "$target"
+        echo "wrote development sidecar $target"
+    fi
