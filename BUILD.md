@@ -240,7 +240,7 @@ Thirty sessions. Tick each box as it lands.
 - [x] 01 · Repo, `justfile`, `.gitignore`, `STATE.md`, Python package skeleton
 - [x] 02 · `000_init.sql` + `ledger migrate` with `user_version` + dump/restore round-trip test
 - [x] 03 · `ledger log` — writes an entry, prints the streak
-- [ ] 04 · `ledger mono` — skeleton, `$EDITOR` template, status transitions
+- [x] 04 · `ledger mono` — skeleton, `$EDITOR` template, status transitions
 - [ ] 05 · `ledger win` — output linked to today's entry
 
 **Week 2 — the corpus in the database**

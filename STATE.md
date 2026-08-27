@@ -146,6 +146,64 @@ skeleton, `$EDITOR` template, status transitions. Note that the sourcing
 invariant guarding `reviewed` is session 06 (it needs the claim tables), so 04
 can only enforce the ordering of the four statuses, not the invariant.
 
+### session 04 — `ledger mono` opens a skeleton and edits it in `$EDITOR`
+
+**Landed**
+
+- `ledger/monographs.py` — `create()`, `by_name()`, `update()`, `set_status()`,
+  `render_template()`, `parse_template()`.
+- `ledger/editor.py` — hands text to `$EDITOR`, returns None when nothing changed.
+- `ledger mono NAME [--part --family --authority --habitat] [--status S] [--no-edit]`.
+- Rewriting the summary stamps `summary_rewritten_at`; writing the *same* text
+  again does not. Every write touches `last_touched`.
+- 17 tests: skeleton creation, the four transitions, and a full round trip
+  through the template including multi-paragraph prose.
+
+`just check` passes: ruff clean, 53 tests green.
+
+**Invariant 2, read carefully**
+
+"Never let an unresolved name into `accepted_name`" guards against a
+**below-threshold GBIF match** being written there — not against the
+researcher's own typing. Artboard 08 state 4 offers `Enter name by hand` as a
+resolution, so a hand-entered name is a resolved name. `ledger mono` therefore
+writes the typed name straight into `accepted_name` and leaves `wfo_id`,
+`gbif_key` and `gbif_confidence` NULL.
+
+That NULL **is** the review queue: `status = 'skeleton' AND gbif_key IS NULL`
+is artboard 08's `queue 3 of 7` with no extra table, and the candidate list it
+shows can be fetched live at review time rather than stored. Session 09 should
+confirm this before building anything else — there is no fifth migration slot
+in schema v4 if it turns out candidates must persist.
+
+**The template format**
+
+```
+# Khaya senegalensis
+authority: (Desr.) A.Juss.
+family: Meliaceae
+part: stem bark
+habitat: African mahogany, dry-savanna belt
+
+## summary
+…prose…
+
+## preparation
+…prose…
+```
+
+Deterministic to parse, and it refuses an invented field or section rather than
+silently dropping it. The `# name` line is fixed — renaming is a resolver's job.
+Claim rows (vernacular, indication, constituent, safety) are **not** in the
+template; they are per-row with per-row sourcing and arrive in session 06.
+
+**Not enforced here:** the sourcing invariant. `--status reviewed` currently
+succeeds on any record, because the trigger that blocks it needs the claim
+tables. Session 06 lands the trigger and §7 test 4 with it.
+
+**Next session starts at:** BUILD.md §6, week 1, item **05** — `ledger win`,
+an output linked to today's entry.
+
 ---
 
 ## Open questions
@@ -174,6 +232,10 @@ answer them alone.
   yesterday but not yet today currently keeps the run live. Artboard 08 only
   specifies the three-day case. If it should be strict, `current_streak()` is
   the one line to change.
+
+- **New (04):** does the artboard 08 state 4 candidate list need to persist, or
+  can it be fetched live at review time? Built as live. If it must persist there
+  is no spare migration in schema v4 — decide in session 09.
 
 ---
 
