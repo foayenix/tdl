@@ -89,6 +89,29 @@ export async function dayLog(): Promise<DayLog> {
   return invoke<DayLog>("ledger_day_log");
 }
 
+export type CorpusRow = {
+  id: number;
+  accepted_name: string | null;
+  authority: string | null;
+  family: string | null;
+  part: string | null;
+  status: string;
+  indications: number;
+  evidence: string | null;
+  first_written: string;
+};
+
+export type Corpus = {
+  rows: CorpusRow[];
+  total: number;
+  indications: number;
+  never_published_on: number;
+};
+
+export async function corpus(): Promise<Corpus> {
+  return invoke<Corpus>("ledger_corpus");
+}
+
 export type FetchResult = {
   ok: boolean;
   reference_id: number | null;

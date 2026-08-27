@@ -31,6 +31,8 @@
   width: 100%;
   min-height: var(--row-height);
   padding: var(--row-padding);
+  /* A clickable row is a <button>; without this it keeps the UA border. */
+  border: 0;
   border-bottom: 1px solid var(--hairline);
   background: transparent;
   font-family: var(--font-sans);
@@ -40,8 +42,18 @@
   text-align: left;
 }
 
-.table__row:last-child {
+.table__body > .table__row:last-child {
   border-bottom: 0;
+}
+
+/* Artboard 03 puts the corpus counts inside the table card, below the rows. */
+.table__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: 9px var(--space-16);
+  border-top: 1px solid var(--hairline);
 }
 
 button.table__row {

@@ -1,8 +1,9 @@
 import { append, clear, el } from "./dom";
-import { dayLog, navCounts, note, status, todayStats } from "./ledger";
-import type { DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
+import { corpus, dayLog, navCounts, note, status, todayStats } from "./ledger";
+import type { Corpus, DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
+import { renderCorpus } from "./screens/corpus";
 import { renderToday } from "./screens/today";
 
 function routeFromHash(): Route {
@@ -17,6 +18,7 @@ type Loaded = {
   today: TodayStats | null;
   note: SavedNote | null;
   log: DayLog | null;
+  corpus: Corpus | null;
   error: string | null;
 };
 
@@ -28,6 +30,7 @@ async function load(): Promise<Loaded> {
       today: await todayStats(),
       note: await note(),
       log: await dayLog(),
+      corpus: await corpus(),
       error: null,
     };
   } catch (error) {
@@ -39,6 +42,7 @@ async function load(): Promise<Loaded> {
       today: null,
       note: null,
       log: null,
+      corpus: null,
       error: String(error),
     };
   }
@@ -49,7 +53,15 @@ async function render(): Promise<void> {
   if (!app) return;
 
   const route = routeFromHash();
-  const { status: connected, counts, today, note: saved, log, error } = await load();
+  const {
+    status: connected,
+    counts,
+    today,
+    note: saved,
+    log,
+    corpus: catalogue,
+    error,
+  } = await load();
 
   clear(app);
 
@@ -68,7 +80,10 @@ async function render(): Promise<void> {
   if (route === "today" && today && saved && log) {
     renderToday(screen, today, saved, log, () => void render());
   }
-  else if (route === "system") renderSystem(screen);
+  else if (route === "corpus" && catalogue) {
+    // The monograph screen is session 23; until then a row press does nothing.
+    renderCorpus(screen, catalogue, () => {});
+  } else if (route === "system") renderSystem(screen);
   else if (error) append(screen, el("div", { class: "trouble" }, error));
 }
 

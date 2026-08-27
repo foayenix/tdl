@@ -238,6 +238,88 @@ pub fn today_stats(path: &Path) -> Result<TodayStats> {
     })
 }
 
+/// One row of artboard 03's corpus table.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CorpusRow {
+    pub id: i64,
+    pub accepted_name: Option<String>,
+    pub authority: Option<String>,
+    pub family: Option<String>,
+    pub part: Option<String>,
+    pub status: String,
+    pub indications: i64,
+    /// The maximum evidence across this record's indications, or None if it
+    /// has none. A monograph's headline evidence is the maximum (BUILD.md §4).
+    pub evidence: Option<String>,
+    pub first_written: String,
+}
+
+/// The corpus screen: its rows, its header counts and its footer counts.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct Corpus {
+    pub rows: Vec<CorpusRow>,
+    pub total: i64,
+    pub indications: i64,
+    /// The gap query, permanently visible in the footer (BUILD.md §4).
+    pub never_published_on: i64,
+}
+
+/// Rank the evidence enum in SQL, so `max` means what the design means.
+const EVIDENCE_RANK: &str = "CASE evidence
+    WHEN 'traditional_only' THEN 1
+    WHEN 'in_vitro' THEN 2
+    WHEN 'in_vivo' THEN 3
+    WHEN 'human_uncontrolled' THEN 4
+    WHEN 'rct' THEN 5
+    WHEN 'meta_analysis' THEN 6
+END";
+
+pub fn corpus(path: &Path) -> Result<Corpus> {
+    let connection = open_checked(path)?;
+
+    let sql = format!(
+        "SELECT m.id, m.accepted_name, m.authority, m.family, m.part, m.status,
+                (SELECT count(*) FROM indication i WHERE i.monograph_id = m.id),
+                (SELECT i.evidence FROM indication i WHERE i.monograph_id = m.id
+                   ORDER BY {EVIDENCE_RANK} DESC LIMIT 1),
+                m.first_written
+         FROM monograph m
+         ORDER BY m.first_written, m.id"
+    );
+
+    let mut statement = connection.prepare(&sql)?;
+    let rows = statement.query_map([], |row| {
+        Ok(CorpusRow {
+            id: row.get(0)?,
+            accepted_name: row.get(1)?,
+            authority: row.get(2)?,
+            family: row.get(3)?,
+            part: row.get(4)?,
+            status: row.get(5)?,
+            indications: row.get(6)?,
+            evidence: row.get(7)?,
+            first_written: row.get(8)?,
+        })
+    })?;
+
+    let rows: Vec<CorpusRow> = rows.collect::<std::result::Result<_, _>>()?;
+
+    Ok(Corpus {
+        total: rows.len() as i64,
+        rows,
+        indications: count(&connection, "SELECT count(*) FROM indication")?,
+        // BUILD.md §4's gap query, verbatim.
+        never_published_on: count(
+            &connection,
+            "SELECT count(*) FROM (
+                 SELECT m.id FROM monograph m
+                 LEFT JOIN output_monograph om ON om.monograph_id = m.id
+                 WHERE om.output_id IS NULL AND m.status IN ('sourced','reviewed')
+             )",
+        )?,
+    })
+}
+
 /// What `ledger ref --json` said, reduced to what the deposit row shows.
 ///
 /// The sidecar owns Crossref (BUILD.md §3): Rust has no HTTP client and never

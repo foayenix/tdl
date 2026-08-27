@@ -193,10 +193,9 @@ function chips(): HTMLElement {
       ...EVIDENCE.map(([code, label, step]) =>
         el(
           "span",
-          { class: `chip chip--ev${step}` },
+          { class: `chip chip--ev chip--ev${step}` },
           el("span", { class: "chip__code" }, code),
-          " ",
-          label,
+          el("span", { class: "chip__label" }, label),
         ),
       ),
     ),
@@ -235,7 +234,7 @@ function corpusRows(): HTMLElement {
         binomial("Prunus africana", "(Hook.f.) Kalkman"),
         "Rosaceae",
         "stem bark",
-        el("span", { class: "chip chip--status-reviewed" }, "reviewed"),
+        el("span", { class: "chip chip--sm chip--status-reviewed" }, "reviewed"),
         "9",
         el(
           "span",
@@ -251,7 +250,7 @@ function corpusRows(): HTMLElement {
         binomial("Khaya senegalensis", "(Desr.) A.Juss."),
         "Meliaceae",
         "stem bark",
-        el("span", { class: "chip chip--status-drafted" }, "drafted"),
+        el("span", { class: "chip chip--sm chip--status-drafted" }, "drafted"),
         "3",
         el(
           "span",

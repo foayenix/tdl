@@ -8,9 +8,9 @@ use std::time::{Duration, Instant};
 use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_output, day_log, default_path, nav_counts, note_for_today, open_monograph, parse_fetch,
-    save_note, set_floor_day, status, today_stats, DayLog, FetchResult, NavCounts, SavedNote,
-    Status, TodayStats,
+    add_output, corpus, day_log, default_path, nav_counts, note_for_today, open_monograph,
+    parse_fetch, save_note, set_floor_day, status, today_stats, Corpus, DayLog, FetchResult,
+    NavCounts, SavedNote, Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -107,6 +107,11 @@ fn ledger_day_log() -> std::result::Result<DayLog, String> {
 }
 
 #[tauri::command]
+fn ledger_corpus() -> std::result::Result<Corpus, String> {
+    corpus(&ledger_path()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn ledger_note() -> std::result::Result<SavedNote, String> {
     note_for_today(&ledger_path()).map_err(|error| error.to_string())
 }
@@ -139,7 +144,8 @@ fn main() {
             ledger_open_monograph,
             ledger_add_output,
             ledger_day_log,
-            ledger_fetch_reference
+            ledger_fetch_reference,
+            ledger_corpus
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

@@ -108,13 +108,45 @@
   border-color: var(--primary-ring);
 }
 
+/* Artboard 03's `New monograph`: the accent on its wash, and no ring — the
+   screen's main action without the weight of a primary button. */
+.button-quiet--accent {
+  color: var(--primary);
+  background: var(--primary-wash);
+  border-color: transparent;
+  font-size: var(--size-emphasis);
+  padding: var(--space-6) var(--space-12);
+}
+
+.button-quiet--accent:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--primary-ring);
+  border-color: transparent;
+}
+
 .button-quiet:disabled {
   color: var(--disabled-ink);
   border-color: var(--disabled);
   cursor: default;
 }
 
-:root[data-theme="dark"] .button-quiet:disabled {
+:root[data-theme="dark"] /* Artboard 03's `New monograph`: the accent on its wash, and no ring — the
+   screen's main action without the weight of a primary button. */
+.button-quiet--accent {
+  color: var(--primary);
+  background: var(--primary-wash);
+  border-color: transparent;
+  font-size: var(--size-emphasis);
+  padding: var(--space-6) var(--space-12);
+}
+
+.button-quiet--accent:hover:not(:disabled) {
+  color: var(--primary);
+  background: var(--primary-ring);
+  border-color: transparent;
+}
+
+.button-quiet:disabled {
   border-color: var(--quiet-disabled-border);
 }
 
@@ -290,16 +322,42 @@
 
 /* ── chips (DESIGN.md §5) ───────────────────────────────────────────── */
 
+/* Status, severity and reading-state pills are mono and uppercase; the
+   artboards set them that way in every place they appear. Two sizes: the
+   standalone one (artboard 01, the record header) and `--sm`, which is what a
+   table row uses (artboard 03). */
 .chip {
   display: inline-block;
-  padding: var(--space-2) var(--space-6);
+  padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-chip);
   border: 1px solid transparent;
-  font-family: var(--font-sans);
-  font-size: var(--size-emphasis);
-  font-weight: 500;
-  line-height: var(--leading-emphasis);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   white-space: nowrap;
+}
+
+.chip--sm {
+  padding: 1px var(--space-7);
+  font-size: var(--size-micro-label);
+}
+
+/* The evidence chip is two parts: the code, so the exact level stays
+   recoverable, and the label beside it. */
+.chip--ev {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) 9px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.chip--ev.chip--sm {
+  gap: 5px;
+  padding: 1px var(--space-7);
 }
 
 .chip--status-skeleton {
@@ -348,8 +406,23 @@
 
 .chip__code {
   font-family: var(--font-mono);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.chip__label {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.chip--sm .chip__code {
   font-size: var(--size-micro-label);
-  letter-spacing: var(--track-micro-label);
+}
+
+.chip--sm .chip__label {
+  font-size: 10.5px;
 }
 
 .chip--severity-critical {

@@ -35,6 +35,8 @@ export type TableOptions = {
   compact?: boolean;
   /** 14px horizontal padding — tables inside a record or a narrow panel. */
   inset?: boolean;
+  /** A row below the body, inside the card. Artboard 03's corpus counts. */
+  footer?: Node;
   /** Off by default. Turn it on only where a row is very wide (DESIGN.md §1). */
   zebra?: boolean;
 };
@@ -127,6 +129,7 @@ export function renderTable(
   }
 
   table.appendChild(body);
+  if (options.footer) table.appendChild(el("div", { class: "table__foot" }, options.footer));
   return table;
 }
 
@@ -134,13 +137,13 @@ export function renderTable(
 export const COLUMNS = {
   // corpus — 936px inner
   corpus: [
-    { width: 39.8, label: "name" },
+    { width: 39.8, label: "accepted name" },
     { width: 12.0, label: "family" },
     { width: 8.8, label: "part" },
     { width: 9.7, label: "status" },
     { width: 3.7, label: "ind", align: "right", mono: true },
     { width: 16.2, label: "evidence" },
-    { width: 9.8, label: "written", mono: true },
+    { width: 9.8, label: "first written", align: "right", mono: true },
   ] as Column[],
 
   // day log — 1148px inner

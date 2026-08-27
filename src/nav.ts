@@ -48,7 +48,7 @@ export const GROUPS: Group[] = [
 ];
 
 /** Screens that exist. The rest are disabled until their session lands. */
-export const BUILT: ReadonlySet<Route> = new Set<Route>(["today", "system"]);
+export const BUILT: ReadonlySet<Route> = new Set<Route>(["today", "corpus", "system"]);
 
 /** The two mono lines at the foot of the sidebar: path, then size and clock. */
 function footer(connected: Status | null, error: string | null): HTMLElement {

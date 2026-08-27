@@ -1043,6 +1043,63 @@ those widths; this session is the screen, its header
 `9 never published on` figure is the gap query `links.never_published_on()`
 already proves.
 
+### session 20 — artboard 03's corpus table
+
+**Landed**
+
+- Rust: `corpus()` — every record with its indication count and its **headline
+  evidence**, ranked in SQL so `max` means what §4 means, plus the footer
+  counts including the gap query.
+- `src/evidence.ts` and `src/chips.ts` — the enum, its E-codes, its labels, the
+  four-step ramp, and every chip built in one place so screens cannot disagree.
+- `src/screens/corpus.ts`.
+- `renderTable` grew a `footer` option; artboard 03 puts the counts **inside**
+  the table card, not below it.
+
+`just check` passes: 282 pytest, 39 cargo, tsc clean.
+
+**The chips were wrong and the artboards said so**
+
+`.chip` was Plex Sans 12/500. Every artboard sets status, severity and
+reading-state pills in **mono, uppercase**, and the evidence chip in two parts
+— a mono code and a sans label. Rebuilt to match, in two sizes, because the
+artboards use two:
+
+| | standalone (artboard 01, record header) | in a table row (artboard 03) |
+|---|---|---|
+| pill | mono 10 · .1em · `4px 8px` | mono 9.5 · `1px 7px` |
+| evidence | gap 6 · `4px 9px` · code 10/500 · label 11.5 | gap 5 · `1px 7px` · code 9.5 · label 10.5 |
+
+`chip--sm` is the table size. The evidence code sits beside the colour so the
+exact level stays recoverable — that is the whole reason six levels can share
+four steps.
+
+**A clickable row is a `<button>`, and it kept the browser's border**
+
+Corpus rows are the first pressable rows in the application, and they came out
+with a dark bar down the right edge — the UA button border, which
+`border-bottom` alone does not override. `border: 0` first, then the hairline.
+Every later table with pressable rows would have inherited it.
+
+**`New monograph` is a new modifier, matching the artboard exactly**
+
+Artboard 03 renders it `primary` on `primary-wash` with **no ring** — the
+screen's main action without a primary button's weight. `.button-quiet.is-selected`
+is the nearest specified component but carries `primary-ring` and, more to the
+point, is a *state*: the button is not selected. `.button-quiet--accent` is one
+modifier doing one job.
+
+**Not here yet, by plan:** the 208px filter rail (session 21) and the `find`
+box (session 22). The header already reads `5 monographs · 5 shown · sorted by
+first written`, so `shown` becomes meaningful the moment filters land.
+
+**Next session starts at:** BUILD.md §6, week 4, item **21** — the filter rail:
+status · family (top six, then `all 19 families`) · evidence level E1–E6 ·
+flags (`never published on`, `conservation concern`, `benefit-sharing absent`).
+Additive across groups, OR within a group, **all state in the URL hash**. Note
+that `conservation concern` has no column in schema v4 — check that flag
+against the schema before building it.
+
 ---
 
 ## Open questions
