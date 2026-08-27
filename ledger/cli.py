@@ -9,8 +9,11 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from . import __version__
+from .commands import migrate as migrate_command
+from .db import DEFAULT_DB_PATH
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,11 +26,20 @@ def build_parser() -> argparse.ArgumentParser:
         action="version",
         version=f"ledger {__version__}",
     )
+    parser.add_argument(
+        "--db",
+        type=Path,
+        default=DEFAULT_DB_PATH,
+        metavar="PATH",
+        help=f"the ledger file (default: {DEFAULT_DB_PATH})",
+    )
     parser.set_defaults(handler=None)
 
-    # Subcommands are added here as sessions land them: migrate (02), log (03),
-    # mono (04), win (05), link/seed (07), ref (08), find (10), inbox.
-    parser.add_subparsers(dest="command", metavar="command")
+    subparsers = parser.add_subparsers(dest="command", metavar="command")
+
+    # Registered as sessions land them: log (03), mono (04), win (05),
+    # link/seed (07), ref (08), find (10), inbox.
+    migrate_command.register(subparsers)
 
     return parser
 

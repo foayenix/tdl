@@ -61,6 +61,53 @@ Where the build actually is. Updated at the end of every session (BUILD.md §0).
 `PRAGMA user_version`, plus the dump/restore round-trip test (§7 test 1).
 Nothing before it is outstanding.
 
+### session 02 — `ledger migrate` builds the four tables and a dump restores them
+
+**Landed**
+
+- `schema/000_init.sql` — `entry`, `monograph`, `reference`, `output`. Every
+  field §4 calls out is present, including the easy-to-miss ones (`wfo_id`,
+  `gbif_key`, `preparation`, `opened_count`, `why_it_mattered`, `read_state`).
+- `ledger/db.py` — `connect()` opens WAL, `busy_timeout = 5000` and
+  `foreign_keys = ON` on **every** connection, per §3. Default path
+  `~/Documents/ledger.sqlite`, overridable with `--db`.
+- `ledger/migrate.py` — discovers `schema/NNN_name.sql`, refuses a non-migration
+  filename or a gap in the ladder, applies each file and stamps
+  `user_version = NNN + 1` in one transaction. So 000→1 … 003→4 = schema v4.
+- `ledger/commands/migrate.py` + `ledger migrate`. Idempotent: a second run
+  prints `nothing to apply · schema v1`.
+- **§7 test 1, dump round-trip** — populate all four tables, dump, restore into
+  a fresh file, assert `sqlite_master` and every row identical. Plus the
+  migration-ladder assertions (§7 test 3, as far as the migrations that exist)
+  and CHECK-constraint tests for the three enums.
+
+`just check` passes: ruff clean, 23 tests green.
+
+**Decisions taken, smaller version built**
+
+1. **`foreign_keys = ON` is a fourth pragma** §3 does not name. Without it the
+   `output.entry_id` reference is decorative. It is per-connection, so **the
+   Rust side must set it too** — session 12.
+2. **The dump is `Connection.iterdump()`, not the `sqlite3` CLI.** §4 writes the
+   habit as `sqlite3 ledger.sqlite .dump`; the test must run wherever pytest
+   runs, and this container has no `sqlite3` binary. `just dump` (session 11)
+   still has to decide which one ships. `iterdump` does not carry
+   `user_version`, so whatever session 11 writes must stamp it alongside — the
+   test does this explicitly and says so.
+3. **No indexes beyond the two UNIQUE constraints.** At forty records they buy
+   nothing and they are cheap to add in a later migration.
+4. **A reference with neither DOI nor ISBN is allowed.** §4 says "`doi` *or*
+   `isbn`", which reads as the field pair rather than a constraint, and a field
+   notebook has neither. No CHECK — see the open question below.
+5. **`monograph` has no `entry_id`.** §2 says a daily entry points at the
+   monograph written that day, but §4's field list has no such column and
+   session 05 puts `entry_id` on `output` only. `monograph.first_written` dates
+   it. See the open question below.
+
+**Next session starts at:** BUILD.md §6, week 1, item **03** — `ledger log`,
+writes an entry, prints the streak. §7 test 7 (streak query: no entries, one
+entry, gap yesterday, gap today, out of order) belongs to that session.
+
 ---
 
 ## Open questions
@@ -75,6 +122,15 @@ answer them alone.
 - Whether `benefit_sharing.expires` warns in-app as the date approaches.
 - **New (01):** `docs/spec.md` is missing from the handoff — is it still the
   live document, or has BUILD.md replaced it?
+
+- **New (02):** should `reference` refuse a row with neither DOI nor ISBN? §4
+  reads either way and a field notebook has neither. Currently allowed.
+- **New (02):** how does a daily entry point at the monograph written that day —
+  `monograph.entry_id`, or the join on `first_written`? Built as the join.
+- **New (02):** is `entry.floor_day` the user's deliberate "today was a floor
+  day" mark, or is it derived from `minutes >= 20`? Artboard 02 shows both a
+  yes/no toggle and a derived `floor met 118 / 140`. Stored as an explicit flag;
+  the derived count can stay derived.
 
 ---
 
