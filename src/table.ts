@@ -13,6 +13,8 @@ export type Column = {
   label: string;
   align?: "right";
   mono?: boolean;
+  /** Extra leading space, as the artboard gives the day log's `floor`. */
+  padLeft?: number;
   /** The unsourced / selected marker column. Carries no label. */
   marker?: true;
 };
@@ -78,6 +80,7 @@ export function renderTable(
         "span",
         {
           class: `table__cell${column.align === "right" ? " table__cell--right" : ""}`,
+          style: column.padLeft ? `padding-left: ${column.padLeft}px` : undefined,
         },
         column.marker ? "" : column.label,
       ),
@@ -105,7 +108,10 @@ export function renderTable(
       if (column.mono) cellClasses.push("numeric");
       if (column.marker) cellClasses.push("table__cell--marker");
 
-      const cell = el("span", { class: cellClasses.join(" ") });
+      const cell = el("span", {
+        class: cellClasses.join(" "),
+        style: column.padLeft ? `padding-left: ${column.padLeft}px` : undefined,
+      });
       if (column.marker) {
         // §6: a 4 × 16px `secondary` mark in the leading column. Always
         // present, transparent when the row is sourced, so nothing shifts.
@@ -142,7 +148,7 @@ export const COLUMNS = {
     { width: 8.7, label: "date", mono: true },
     { width: 3.3, label: "day" },
     { width: 4.4, label: "min", align: "right", mono: true },
-    { width: 8.0, label: "floor" },
+    { width: 8.0, label: "floor", padLeft: 12 },
     { width: 75.6, label: "deposited" },
   ] as Column[],
 

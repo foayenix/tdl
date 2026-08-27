@@ -226,3 +226,97 @@ fn two_outputs_on_one_day_share_the_entry() {
     assert_eq!(days, 1);
     assert_eq!(distinct, 1);
 }
+
+#[test]
+fn the_day_log_returns_a_row_for_every_day_logged_or_not() {
+    let scratch = Scratch::new("day_log");
+    let database = scratch.database();
+
+    let connection = open_checked(&database).expect("open");
+    connection
+        .execute(
+            "INSERT INTO entry (date, minutes) VALUES (date('now'), 96)",
+            [],
+        )
+        .unwrap();
+    connection
+        .execute(
+            "INSERT INTO entry (date, minutes, floor_day) VALUES (date('now','-3 day'), 20, 1)",
+            [],
+        )
+        .unwrap();
+
+    let log = ledger_app::day_log(&database, 14).expect("log");
+
+    assert_eq!(log.days.len(), 14, "a fortnight is always fourteen rows");
+    assert!(log.days[0].is_today);
+    assert_eq!(log.days[0].minutes, 96);
+    assert_eq!(log.days[1].minutes, 0, "an unlogged day is a row at zero");
+    assert_eq!(log.days[3].minutes, 20);
+    assert!(log.days[3].floor_day);
+
+    assert_eq!(log.total_minutes, 116);
+    assert_eq!(log.average, 116 / 14);
+    assert_eq!(log.floor_days, 1);
+}
+
+#[test]
+fn the_day_log_names_what_was_deposited() {
+    let scratch = Scratch::new("day_log_deposits");
+    let database = scratch.database();
+
+    open_monograph(&database, "Khaya senegalensis").expect("open");
+    open_monograph(&database, "Prunus africana").expect("open");
+    add_output(&database, "note", "Evidence grading").expect("add");
+
+    let connection = open_checked(&database).expect("open");
+    connection
+        .execute(
+            "INSERT INTO reference (doi, title) VALUES ('10.1/x', 'A paper')",
+            [],
+        )
+        .unwrap();
+
+    let today = &ledger_app::day_log(&database, 14).expect("log").days[0];
+
+    assert_eq!(
+        today.monographs,
+        vec![
+            "Khaya senegalensis".to_string(),
+            "Prunus africana".to_string()
+        ]
+    );
+    assert_eq!(today.references, 1);
+    assert_eq!(today.outputs, vec!["note".to_string()]);
+}
+
+#[test]
+fn a_quiet_fortnight_deposits_nothing() {
+    let scratch = Scratch::new("day_log_quiet");
+    let database = scratch.database();
+
+    let log = ledger_app::day_log(&database, 14).expect("log");
+
+    assert_eq!(log.total_minutes, 0);
+    assert_eq!(log.average, 0);
+    assert_eq!(log.floor_days, 0);
+    assert!(log.days.iter().all(|day| day.monographs.is_empty()));
+}
+
+#[test]
+fn a_day_deposited_against_but_not_worked_is_logged_at_zero() {
+    // Blank and 0 must not look the same: one day never happened, the other
+    // happened and produced an output.
+    let scratch = Scratch::new("day_log_zero");
+    let database = scratch.database();
+
+    add_output(&database, "note", "Evidence grading").expect("add");
+
+    let today = &ledger_app::day_log(&database, 14).expect("log").days[0];
+    assert!(today.logged);
+    assert_eq!(today.minutes, 0);
+
+    let yesterday = &ledger_app::day_log(&database, 14).expect("log").days[1];
+    assert!(!yesterday.logged);
+    assert_eq!(yesterday.minutes, 0);
+}

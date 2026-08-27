@@ -24,6 +24,7 @@ export async function status(): Promise<Status> {
 export type TodayStats = {
   date: string;
   minutes: number;
+  logged: boolean;
   floor_day: boolean;
   current_streak: number;
   longest_streak: number;
@@ -63,6 +64,40 @@ export async function openMonograph(name: string): Promise<number> {
 
 export async function addOutput(kind: string, title: string): Promise<number> {
   return invoke<number>("ledger_add_output", { kind, title });
+}
+
+export type DayRow = {
+  date: string;
+  dow: string;
+  minutes: number;
+  logged: boolean;
+  floor_day: boolean;
+  is_today: boolean;
+  monographs: string[];
+  references: number;
+  outputs: string[];
+};
+
+export type DayLog = {
+  days: DayRow[];
+  total_minutes: number;
+  average: number;
+  floor_days: number;
+};
+
+export async function dayLog(): Promise<DayLog> {
+  return invoke<DayLog>("ledger_day_log");
+}
+
+export type FetchResult = {
+  ok: boolean;
+  reference_id: number | null;
+  title: string | null;
+  message: string;
+};
+
+export async function fetchReference(doi: string): Promise<FetchResult> {
+  return invoke<FetchResult>("ledger_fetch_reference", { doi });
 }
 
 export const OUTPUT_KINDS = ["paper", "talk", "long-form", "release", "note"] as const;

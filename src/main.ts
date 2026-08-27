@@ -1,6 +1,6 @@
 import { append, clear, el } from "./dom";
-import { navCounts, note, status, todayStats } from "./ledger";
-import type { NavCounts, SavedNote, Status, TodayStats } from "./ledger";
+import { dayLog, navCounts, note, status, todayStats } from "./ledger";
+import type { DayLog, NavCounts, SavedNote, Status, TodayStats } from "./ledger";
 import { BUILT, renderNav, type Route } from "./nav";
 import { renderSystem } from "./screens/system";
 import { renderToday } from "./screens/today";
@@ -16,6 +16,7 @@ type Loaded = {
   counts: NavCounts | null;
   today: TodayStats | null;
   note: SavedNote | null;
+  log: DayLog | null;
   error: string | null;
 };
 
@@ -26,12 +27,20 @@ async function load(): Promise<Loaded> {
       counts: await navCounts(),
       today: await todayStats(),
       note: await note(),
+      log: await dayLog(),
       error: null,
     };
   } catch (error) {
     // A ledger that is missing, or at a schema this build does not read, is a
     // real state with a real instruction. The message says which.
-    return { status: null, counts: null, today: null, note: null, error: String(error) };
+    return {
+      status: null,
+      counts: null,
+      today: null,
+      note: null,
+      log: null,
+      error: String(error),
+    };
   }
 }
 
@@ -40,7 +49,7 @@ async function render(): Promise<void> {
   if (!app) return;
 
   const route = routeFromHash();
-  const { status: connected, counts, today, note: saved, error } = await load();
+  const { status: connected, counts, today, note: saved, log, error } = await load();
 
   clear(app);
 
@@ -56,8 +65,11 @@ async function render(): Promise<void> {
     screen,
   );
 
-  if (route === "today" && today && saved) renderToday(screen, today, saved, () => void render());
+  if (route === "today" && today && saved && log) {
+    renderToday(screen, today, saved, log, () => void render());
+  }
   else if (route === "system") renderSystem(screen);
+  else if (error) append(screen, el("div", { class: "trouble" }, error));
 }
 
 window.addEventListener("hashchange", () => void render());

@@ -3,10 +3,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+use tauri_plugin_shell::ShellExt;
 
 use ledger_app::{
-    add_output, default_path, nav_counts, note_for_today, open_monograph, save_note, set_floor_day,
-    status, today_stats, NavCounts, SavedNote, Status, TodayStats,
+    add_output, day_log, default_path, nav_counts, note_for_today, open_monograph, parse_fetch,
+    save_note, set_floor_day, status, today_stats, DayLog, FetchResult, NavCounts, SavedNote,
+    Status, TodayStats,
 };
 
 /// Where this build reads the ledger from. `LEDGER_DB` overrides it, which is
@@ -35,6 +39,71 @@ fn ledger_today() -> std::result::Result<TodayStats, String> {
 #[tauri::command]
 fn ledger_set_floor_day(floor_day: bool) -> std::result::Result<TodayStats, String> {
     set_floor_day(&ledger_path(), floor_day).map_err(|error| error.to_string())
+}
+
+/// Artboard 02's table is the last fourteen days.
+const DAY_LOG_SPAN: i64 = 14;
+
+/// Every sidecar call has a timeout (BUILD.md §3). Crossref's own polite-pool
+/// latency is well inside this; anything past it is a network that is not
+/// coming back, and the row says so rather than spinning.
+const SIDECAR_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// `Fetch` — resolve a DOI through the frozen `ledger` binary.
+///
+/// The frontend never holds shell permission; the invocation is here, and the
+/// capability grants exactly one sidecar (BUILD.md §3).
+#[tauri::command]
+async fn ledger_fetch_reference(
+    app: tauri::AppHandle,
+    doi: String,
+) -> std::result::Result<FetchResult, String> {
+    let database = ledger_path();
+    let started = Instant::now();
+
+    let command = app
+        .shell()
+        .sidecar("ledger")
+        .map_err(|error| format!("the ledger sidecar is not available: {error}"))?
+        .args([
+            "--db",
+            &database.to_string_lossy(),
+            "ref",
+            doi.trim(),
+            "--json",
+        ]);
+
+    let output = match tokio::time::timeout(SIDECAR_TIMEOUT, command.output()).await {
+        Err(_) => {
+            return Ok(FetchResult {
+                ok: false,
+                reference_id: None,
+                title: None,
+                message: format!(
+                    "Crossref did not answer within {}s — the DOI was not kept, try again",
+                    SIDECAR_TIMEOUT.as_secs()
+                ),
+            })
+        }
+        Ok(Err(error)) => return Err(format!("the ledger sidecar could not run: {error}")),
+        Ok(Ok(output)) => output,
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let elapsed = started.elapsed().as_millis();
+
+    // The CLI prints its failures to stdout as JSON; stderr means it fell over.
+    if stdout.trim().is_empty() && !output.stderr.is_empty() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Ok(parse_fetch(&stderr, elapsed));
+    }
+
+    Ok(parse_fetch(&stdout, elapsed))
+}
+
+#[tauri::command]
+fn ledger_day_log() -> std::result::Result<DayLog, String> {
+    day_log(&ledger_path(), DAY_LOG_SPAN).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -68,7 +137,9 @@ fn main() {
             ledger_note,
             ledger_save_note,
             ledger_open_monograph,
-            ledger_add_output
+            ledger_add_output,
+            ledger_day_log,
+            ledger_fetch_reference
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

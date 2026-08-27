@@ -67,8 +67,8 @@ sidecar:
     set -euo pipefail
     mkdir -p src-tauri/binaries
     target="src-tauri/binaries/ledger-{{triple}}"
-    if [ ! -x "$target" ]; then
-        printf '#!/usr/bin/env bash\nexec %q -m ledger "$@"\n' "$(pwd)/{{py}}" > "$target"
-        chmod +x "$target"
-        echo "wrote development sidecar $target"
-    fi
+    root="$(pwd)"
+    # Always rewrite: the shim hard-codes paths, and a stale one fails in a way
+    # that only shows up inside the running app (found in session 19).
+    printf '#!/usr/bin/env bash\ncd %q\nexec %q -m ledger "$@"\n' "$root" "$root/{{py}}" > "$target"
+    chmod +x "$target"

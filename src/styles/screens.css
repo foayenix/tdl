@@ -548,3 +548,52 @@
   border-radius: var(--radius-chip);
   padding: var(--space-6) var(--space-12);
 }
+
+/* ── artboard 02 · last fourteen days ───────────────────────────────── */
+
+.daylog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-height: 0;
+}
+
+.daylog__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.daylog__head .label {
+  color: var(--muted);
+}
+
+.daylog__summary {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.daylog__dow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The floor is a success. The word, in `secondary` — never a red mark, never
+   an empty bar (DESIGN.md §8). */
+.daylog__floor {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.deposit__meta--failed {
+  color: var(--secondary);
+  white-space: normal;
+  line-height: 1.3;
+}

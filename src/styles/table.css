@@ -75,7 +75,9 @@ button.table__row {
   outline-offset: calc(var(--focus-ring-offset) * -1);
 }
 
-/* Today's row, or the record in view. */
+/* Today's row, or the record in view. Written to beat the zebra rule, which
+   is otherwise more specific and would swallow it on an even row. */
+.table--zebra .table__row.is-focused,
 .table__row.is-focused {
   background: var(--row-focus);
 }

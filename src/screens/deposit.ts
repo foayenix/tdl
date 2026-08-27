@@ -4,7 +4,16 @@
 // field and one button: type, press, done.
 
 import { append, el } from "../dom";
-import { addOutput, openMonograph, OUTPUT_KINDS, type OutputKind } from "../ledger";
+import {
+  addOutput,
+  fetchReference,
+  openMonograph,
+  OUTPUT_KINDS,
+  type OutputKind,
+} from "../ledger";
+
+/** A failure the row has already shown; no need to repeat it in the strip. */
+class SilentFailure extends Error {}
 
 export type DepositRow = {
   kind: string;
@@ -40,7 +49,7 @@ function row(spec: DepositRow, reload: () => void, say: (message: string) => voi
       field.value = "";
       reload();
     } catch (error) {
-      say(String(error));
+      if (!(error instanceof SilentFailure)) say(String(error));
     } finally {
       button.removeAttribute("disabled");
     }
@@ -87,12 +96,22 @@ export function renderDeposit(reload: () => void, say: (message: string) => void
     {
       kind: "reference",
       placeholder: "doi",
-      // Session 19 puts the Crossref result here; until then it stays empty
-      // rather than promising something the button does not yet do.
+      // Filled in by the sidecar: `resolved in 240 ms`, or why it did not.
       meta: () => null,
       button: { label: "Fetch", class: "button button--secondary" },
-      submit: async () => {
-        throw new Error("Fetch arrives in session 19 — use `ledger ref <doi>` meanwhile");
+      submit: async (value, meta) => {
+        meta.textContent = "resolving…";
+        meta.classList.remove("deposit__meta--failed");
+
+        const result = await fetchReference(value);
+        meta.textContent = result.message;
+
+        if (!result.ok) {
+          // A network that did not answer is a visible inline failure, not a
+          // thrown error — the DOI is usually kept, and the row says so.
+          meta.classList.add("deposit__meta--failed");
+          throw new SilentFailure();
+        }
       },
     },
     {

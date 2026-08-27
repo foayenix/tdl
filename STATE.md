@@ -975,6 +975,74 @@ days` and today's row is `row-focus`. The sidecar shim from session 12 already
 runs the CLI, so `ledger ref <doi> --json` can be called through it — and its
 offline failure path (session 08) is what the row's meta should show.
 
+### session 19 — the fourteen-day table, and the sidecar actually wired to `Fetch`
+
+**Landed**
+
+- Rust: `day_log()` — fourteen rows always, whether or not each day was logged,
+  with what was deposited on each; `parse_fetch()`; and
+  `ledger_fetch_reference`, which invokes the sidecar with a **20-second
+  timeout**.
+- `src/screens/daylog.ts` — the table, header `596 min · 42 avg · 1 floor day`,
+  today's row in `row-focus`.
+- `Fetch` is live.
+- 11 more Rust tests (39 in total).
+
+`just check` passes: 282 pytest, 39 cargo, tsc clean.
+
+**The whole architecture ran, and I have the screenshot**
+
+The window was driven with `xdotool`: click the reference field, type
+`10.1016/j.jep.2019.112202`, press return. Frontend → Rust command → 
+`tauri-plugin-shell` → the capability grant → the `ledger` binary → Python →
+Crossref → back as JSON → parsed → **rendered inline in `secondary` in the
+row's meta slot**:
+
+```
+could not reach Crossref: <urlopen error Tunnel connection failed:
+403 Forbidden> — kept as unresolved, run again later
+```
+
+That is every layer BUILD.md §3 specifies, working, including the visible
+inline failure state it requires. The failure is real — Crossref is
+policy-blocked in this container — which makes it a better test than a success
+would have been.
+
+**It found a bug in session 12's sidecar shim**
+
+The shim ran `python -m ledger` without setting a working directory. The CLI
+runs fine from a terminal at the repo root and fails with `No module named
+ledger` from inside the app, whose cwd is `src-tauri/`. `just sidecar` now
+writes a `cd` into the shim, and **always rewrites** rather than skipping when
+the file exists — a stale shim fails only inside the running app, which is the
+worst place to find out.
+
+A second thing worth knowing for session 30: Tauri copies
+`binaries/ledger-<triple>` to `target/debug/ledger` **at build time**. Changing
+the shim is not enough; the crate has to be rebuilt.
+
+**Deliberate details in the table**
+
+- **A blank `min` and a `0` mean different things.** A day with no entry is
+  blank; a day that was deposited against but not worked reads `0`. `day_log`
+  carries a `logged` flag for exactly this, with a test.
+- **Zebra is on here and nowhere else** — DESIGN.md §1 allows it "only where a
+  row is very wide", and the day log is the wide table. `row-focus` had to be
+  written to out-specify the zebra rule, or today's row would vanish on an even
+  day.
+- **`floor` is the word, in `secondary`.** No red mark, no empty bar, nothing
+  counting down.
+- The `floor` column carries the artboard's 12px left padding, which the table
+  primitive did not support; `Column.padLeft` was added for it. Without it
+  `MIN FLOOR` reads as one label.
+
+**Next session starts at:** BUILD.md §6, week 4, item **20** — artboard 03's
+corpus table. `COLUMNS.corpus` is ready and the specimen already renders at
+those widths; this session is the screen, its header
+(`38 monographs · 22 shown · sorted by first written`) and the footer, whose
+`9 never published on` figure is the gap query `links.never_published_on()`
+already proves.
+
 ---
 
 ## Open questions

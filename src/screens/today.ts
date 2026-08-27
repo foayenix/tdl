@@ -5,7 +5,14 @@
 // mark, never an empty bar (DESIGN.md §8). Nothing on this screen counts down.
 
 import { append, clear, el } from "../dom";
-import { dayName, setFloorDay, type SavedNote, type TodayStats } from "../ledger";
+import {
+  dayName,
+  setFloorDay,
+  type DayLog,
+  type SavedNote,
+  type TodayStats,
+} from "../ledger";
+import { renderDayLog } from "./daylog";
 import { renderDeposit } from "./deposit";
 import { renderNote } from "./note";
 
@@ -97,6 +104,7 @@ export function renderToday(
   host: HTMLElement,
   stats: TodayStats,
   saved: SavedNote,
+  log: DayLog,
   reload: () => void,
 ): void {
   clear(host);
@@ -118,5 +126,6 @@ export function renderToday(
       renderNote(saved, say),
     ),
     renderDeposit(reload, say),
+    renderDayLog(log),
   );
 }

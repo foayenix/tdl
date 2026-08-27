@@ -238,6 +238,192 @@ pub fn today_stats(path: &Path) -> Result<TodayStats> {
     })
 }
 
+/// What `ledger ref --json` said, reduced to what the deposit row shows.
+///
+/// The sidecar owns Crossref (BUILD.md §3): Rust has no HTTP client and never
+/// grows one. This end only reads the answer.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FetchResult {
+    pub ok: bool,
+    pub reference_id: Option<i64>,
+    pub title: Option<String>,
+    /// The line the deposit row's meta slot shows. Never empty.
+    pub message: String,
+}
+
+/// Read the sidecar's `--json` answer.
+///
+/// Three shapes, from `ledger/commands/ref.py`: a bare `error` (a DOI that is
+/// not a DOI, or one Crossref has never heard of), a row plus a `note` (the
+/// network failed and the DOI was kept), or a plain row (resolved).
+pub fn parse_fetch(stdout: &str, elapsed_ms: u128) -> FetchResult {
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(stdout.trim()) else {
+        let line = stdout.trim().lines().next().unwrap_or("").trim();
+        return FetchResult {
+            ok: false,
+            reference_id: None,
+            title: None,
+            message: if line.is_empty() {
+                "the sidecar said nothing".into()
+            } else {
+                line.to_string()
+            },
+        };
+    };
+
+    let reference_id = value.get("id").and_then(serde_json::Value::as_i64);
+    let title = value
+        .get("title")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string);
+
+    if let Some(error) = value.get("error").and_then(serde_json::Value::as_str) {
+        return FetchResult {
+            ok: false,
+            reference_id,
+            title: None,
+            message: error.to_string(),
+        };
+    }
+
+    // A `note` means the row was kept but not resolved — the offline path.
+    if let Some(note) = value.get("note").and_then(serde_json::Value::as_str) {
+        return FetchResult {
+            ok: false,
+            reference_id,
+            title,
+            message: note.to_string(),
+        };
+    }
+
+    FetchResult {
+        ok: true,
+        reference_id,
+        title,
+        // Artboard 09's `resolved in 240 ms`.
+        message: format!("resolved in {elapsed_ms} ms"),
+    }
+}
+
+/// One row of artboard 02's `last fourteen days` table.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DayRow {
+    pub date: String,
+    /// `MON` — the artboard sets it uppercase.
+    pub dow: String,
+    pub minutes: i64,
+    /// The day has an entry. A day deposited against but not worked is logged
+    /// at 0 minutes, which is not the same as a day that never happened.
+    pub logged: bool,
+    /// The day was declared a floor day. See STATE.md, sessions 03 and 19.
+    pub floor_day: bool,
+    pub is_today: bool,
+    /// Binomials whose record was first written this day. Rendered italic.
+    pub monographs: Vec<String>,
+    pub references: i64,
+    /// Output kinds deposited this day.
+    pub outputs: Vec<String>,
+}
+
+/// The table and its header: `1,025 min · 73 avg · 4 floor days`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
+pub struct DayLog {
+    pub days: Vec<DayRow>,
+    pub total_minutes: i64,
+    pub average: i64,
+    pub floor_days: i64,
+}
+
+/// The last `span` days, newest first, whether or not each was logged.
+///
+/// An unlogged day is a real row at 0 minutes rather than a gap — fourteen
+/// rows always, so the shape of a fortnight is visible.
+pub fn day_log(path: &Path, span: i64) -> Result<DayLog> {
+    let connection = open_checked(path)?;
+
+    let mut statement = connection.prepare(
+        "WITH RECURSIVE span(offset) AS (
+             SELECT 0 UNION ALL SELECT offset + 1 FROM span WHERE offset + 1 < ?1
+         ),
+         day(date) AS (SELECT date('now', '-' || offset || ' day') FROM span)
+         SELECT
+             day.date,
+             upper(strftime('%w', day.date)) AS weekday,
+             coalesce(e.minutes, 0),
+             e.id IS NOT NULL,
+             coalesce(e.floor_day, 0),
+             (SELECT count(*) FROM reference r WHERE date(r.added_at) = day.date),
+             (SELECT group_concat(m.accepted_name, char(31))
+                FROM monograph m WHERE m.first_written = day.date),
+             (SELECT group_concat(o.kind, char(31))
+                FROM output o WHERE o.date = day.date)
+         FROM day
+         LEFT JOIN entry e ON e.date = day.date
+         ORDER BY day.date DESC",
+    )?;
+
+    let today: String = connection.query_row("SELECT date('now')", [], |row| row.get(0))?;
+
+    let rows = statement.query_map([span], |row| {
+        let date: String = row.get(0)?;
+        let weekday: String = row.get(1)?;
+        let monographs: Option<String> = row.get(6)?;
+        let outputs: Option<String> = row.get(7)?;
+
+        Ok(DayRow {
+            dow: day_abbreviation(&weekday),
+            is_today: date == today,
+            date,
+            minutes: row.get(2)?,
+            logged: row.get::<_, i64>(3)? != 0,
+            floor_day: row.get::<_, i64>(4)? != 0,
+            references: row.get(5)?,
+            monographs: split_list(monographs),
+            outputs: split_list(outputs),
+        })
+    })?;
+
+    let days: Vec<DayRow> = rows.collect::<std::result::Result<_, _>>()?;
+
+    let total_minutes: i64 = days.iter().map(|day| day.minutes).sum();
+    let floor_days = days.iter().filter(|day| day.floor_day).count() as i64;
+    let average = if days.is_empty() {
+        0
+    } else {
+        total_minutes / days.len() as i64
+    };
+
+    Ok(DayLog {
+        days,
+        total_minutes,
+        average,
+        floor_days,
+    })
+}
+
+/// `group_concat` joined on unit separator — a character no field can contain.
+fn split_list(joined: Option<String>) -> Vec<String> {
+    joined
+        .filter(|value| !value.is_empty())
+        .map(|value| value.split('\u{1f}').map(str::to_string).collect())
+        .unwrap_or_default()
+}
+
+/// SQLite's `%w` is 0 = Sunday.
+fn day_abbreviation(weekday: &str) -> String {
+    match weekday {
+        "0" => "SUN",
+        "1" => "MON",
+        "2" => "TUE",
+        "3" => "WED",
+        "4" => "THU",
+        "5" => "FRI",
+        "6" => "SAT",
+        _ => "",
+    }
+    .to_string()
+}
+
 /// The note as the day holds it, plus what the autosave footer reports.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct SavedNote {
