@@ -1833,6 +1833,37 @@ errors too, since Linux cleans the staged tree the same way.
 
 ---
 
+### after 30 — the first run had no way in
+
+v0.1.4 installed, opened, and said:
+
+> no ledger at /Users/felix/Documents/ledger.sqlite. Run `ledger migrate`.
+
+Which is a correct sentence and a useless one. It is addressed to someone with
+the repo checked out and `.venv/bin/ledger` on their path — not to someone who
+has just dragged an app out of a `.dmg` and has no `ledger` command anywhere.
+The message was written in session 04, when the CLI was the only way in, and
+never revisited once there was a window.
+
+The app ships a frozen sidecar that carries `schema/` for precisely this
+reason: so it can migrate on a machine that has never had Python. The empty
+state spent that for nothing and pointed at a terminal instead.
+
+`ledger_migrate` invokes the sidecar the same way `ledger_fetch_reference`
+already does, and `src/screens/firstrun.ts` renders a real first-run screen —
+what the file is, where it is about to appear, and a button. `Error::NoDatabase`
+is now the one error the frontend does not treat as trouble.
+
+Rendered in both themes before shipping, which is the step that would have
+caught most of what went wrong this week.
+
+Left alone: `Error::NoDatabase`'s message still says "Run `ledger migrate`",
+because for a CLI user that remains the right instruction, and it is the string
+the frontend matches on. If that match ever needs to be robust, the error
+should carry a kind rather than be parsed from prose.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not

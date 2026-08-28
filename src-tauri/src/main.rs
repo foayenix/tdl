@@ -54,6 +54,53 @@ const DAY_LOG_SPAN: i64 = 14;
 /// coming back, and the row says so rather than spinning.
 const SIDECAR_TIMEOUT: Duration = Duration::from_secs(20);
 
+/// Create or migrate the ledger, through the sidecar.
+///
+/// Python owns migrations and Rust never does one (BUILD.md §3) — so this
+/// asks the frozen binary, which carries `schema/` for exactly this reason.
+/// It exists because the alternative was telling someone who has just
+/// double-clicked a .dmg to go and run a command they do not have.
+#[tauri::command]
+async fn ledger_migrate(app: tauri::AppHandle) -> std::result::Result<String, String> {
+    let database = ledger_path();
+
+    // `migrate` writes the file, but not the directory holding it.
+    if let Some(parent) = database.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("could not create {}: {error}", parent.display()))?;
+    }
+
+    let command = app
+        .shell()
+        .sidecar("ledger")
+        .map_err(|error| format!("the ledger sidecar is not available: {error}"))?
+        .args(["--db", &database.to_string_lossy(), "migrate"]);
+
+    let output = match tokio::time::timeout(SIDECAR_TIMEOUT, command.output()).await {
+        Err(_) => {
+            return Err(format!(
+                "migrate did not finish within {}s",
+                SIDECAR_TIMEOUT.as_secs()
+            ))
+        }
+        Ok(Err(error)) => return Err(format!("the ledger sidecar could not run: {error}")),
+        Ok(Ok(output)) => output,
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let why = if stderr.trim().is_empty() {
+            stdout
+        } else {
+            stderr
+        };
+        return Err(format!("migrate failed: {}", why.trim()));
+    }
+
+    Ok(database.to_string_lossy().into_owned())
+}
+
 /// `Fetch` — resolve a DOI through the frozen `ledger` binary.
 ///
 /// The frontend never holds shell permission; the invocation is here, and the
@@ -327,7 +374,8 @@ fn main() {
             ledger_next_skeleton,
             ledger_resolve_name,
             ledger_set_name_by_hand,
-            ledger_wall
+            ledger_wall,
+            ledger_migrate
         ])
         .run(tauri::generate_context!())
         .expect("the ledger window could not start");

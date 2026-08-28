@@ -162,6 +162,11 @@ export async function wall(): Promise<Wall> {
   return invoke<Wall>("ledger_wall");
 }
 
+/** Create or migrate the ledger, through the sidecar. Returns its path. */
+export async function migrate(): Promise<string> {
+  return invoke<string>("ledger_migrate");
+}
+
 export type BrokenStreak = {
   ended_on: string;
   length: number;

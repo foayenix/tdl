@@ -24,6 +24,7 @@ import { renderCorpus } from "./screens/corpus";
 import { renderRecord } from "./screens/record";
 import { renderWall } from "./screens/wall";
 import { renderToday } from "./screens/today";
+import { isMissingLedger, renderFirstRun } from "./screens/firstrun";
 
 /** The last GBIF answer, so its candidate list survives a redraw. */
 let lastResolution: import("./ledger").Resolution | null = null;
@@ -205,6 +206,9 @@ async function render(): Promise<void> {
   } else if (route === "wall") {
     renderWall(screen, await wall());
   } else if (route === "system") renderSystem(screen);
+  // "no ledger at ..." is not trouble, it is the first run. Everything else
+  // still is.
+  else if (error && isMissingLedger(error)) renderFirstRun(screen, error, () => void render());
   else if (error) append(screen, el("div", { class: "trouble" }, error));
 }
 

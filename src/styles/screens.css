@@ -1546,3 +1546,50 @@
   font-style: normal;
   color: var(--muted);
 }
+
+/* ── the first run ──────────────────────────────────────────────────────
+   Before there is a ledger there is no data to lay out, so this is the one
+   screen that is a single column on the surface rather than a grid of cards. */
+
+.firstrun {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-12);
+  max-width: 520px;
+  margin: var(--space-40) 0 0 0;
+  padding: var(--space-28);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+}
+
+.firstrun .label {
+  color: var(--muted);
+}
+
+.firstrun__blurb {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* The path, so it is obvious where the file is about to appear. */
+.firstrun__path {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  width: 100%;
+  color: var(--ink);
+  background: var(--inset);
+  border-radius: var(--radius-chip);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.firstrun__note:empty {
+  display: none;
+}
+
+.firstrun__note.is-trouble {
+  margin: 0;
+  color: var(--critical);
+}
