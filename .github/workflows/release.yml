@@ -101,13 +101,41 @@ jobs:
       - name: Verify the sidecar
         run: just verify-freeze
 
-      # The signature has to hold with the sidecar inside the bundle. If it
-      # does not, the app is "damaged" on arm64 — better to learn that here
-      # than after someone has downloaded it.
-      - name: Verify the signature
+      # v0.1.0 shipped with no app inside it. A second [[bin]] in the crate —
+      # the preview dumper — was picked up by the bundler as the main binary,
+      # so Contents/MacOS/ held that and the sidecar and nothing else. macOS
+      # reported it as "damaged", which was true: there was no executable to
+      # run. Never again silently: ask Info.plist what the executable is
+      # called, and insist it is there.
+      - name: Verify the bundle has an app in it
         run: |
           app="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' 2>/dev/null | head -1)"
           [ -n "$app" ] || { echo "no .app was produced" >&2; exit 1; }
+
+          exe="$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")"
+          [ -x "$app/Contents/MacOS/$exe" ] || {
+            echo "Info.plist names '$exe' but Contents/MacOS/ holds:" >&2
+            ls -1 "$app/Contents/MacOS/" >&2
+            exit 1
+          }
+          echo "CFBundleExecutable '$exe' is present and executable"
+
+          # The sidecar too — the app cannot enrich or migrate without it.
+          [ -x "$app/Contents/MacOS/ledger" ] || {
+            echo "the sidecar is missing from the bundle" >&2; exit 1; }
+
+          # And nothing that has no business shipping.
+          if [ -e "$app/Contents/MacOS/preview_dump" ]; then
+            echo "preview_dump is in the bundle; it is an example, not a bin" >&2
+            exit 1
+          fi
+
+      # The signature has to hold with the sidecar inside the bundle. If it
+      # does not, the app will not start on arm64 — better to learn that here
+      # than after someone has downloaded it.
+      - name: Verify the signature
+        run: |
+          app="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -1)"
           codesign --verify --deep --strict --verbose=2 "$app"
           echo "signature holds with the sidecar inside the bundle"
 

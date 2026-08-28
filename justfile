@@ -323,7 +323,7 @@ doctor:
 #
 # Regenerate the browser preview's answer set.
 preview-data db="/tmp/demo.sqlite":
-    cargo run --manifest-path src-tauri/Cargo.toml --bin preview_dump -- {{db}} preview/data.json
+    cargo run --quiet --manifest-path src-tauri/Cargo.toml --example preview_dump -- {{db}} > preview/data.json
     @echo "preview/data.json  $(wc -c < preview/data.json) bytes"
 
 # Build the read-only browser preview as one self-contained HTML file.

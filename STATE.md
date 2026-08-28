@@ -1759,6 +1759,46 @@ minutes — but the first real tag is the first real test.
 
 ---
 
+### after 30 — v0.1.0 shipped with no app inside it
+
+The .dmg installed and macOS said *"The Deposit Ledger" is damaged and can't be
+opened.* It was not lying. `Contents/MacOS/` held two files: `ledger`, the
+sidecar, and `preview_dump`. The app's own binary was not in the bundle.
+
+`src-tauri/src/bin/preview_dump.rs`, added for the browser preview, made the
+crate a two-binary package. The Tauri bundler picked `preview_dump` as the main
+binary — `Info Patching .../preview_dump with bundle type information` says so
+in the build log, in plain sight, and nobody read it. `Info.plist` then named an
+executable that was never copied.
+
+The fix is one move: `src/bin/preview_dump.rs` → `examples/preview_dump.rs`.
+Examples are never bundled. `mainBinaryName` is now set explicitly rather than
+inferred, so the bundler is told rather than left to guess.
+
+Two things this is really about:
+
+- **The first diagnosis was wrong and confidently delivered.** "Damaged" was
+  read as Gatekeeper's wording for an unsigned app, and a signing fix went out
+  on that basis. The signing work was worth doing on its own merits — arm64 does
+  refuse a binary with no valid signature, and Tauri does copy the sidecar in
+  after the linker has sealed the bundle — but it was not the bug. The bug was
+  visible in the build log and in `ls Contents/MacOS/`, and one look at either
+  would have found it before a wrong explanation was written down. Reproducing
+  it took one `tauri build --bundles deb` on Linux, which was available the
+  whole time.
+- **A release pipeline that never opens what it built.** Every check ran against
+  the source tree; none against the artifact. There are now two that do: the
+  bundle must contain the executable `Info.plist` names, plus the sidecar, and
+  must not contain `preview_dump`; and the signature must still verify with the
+  sidecar inside. Both fail the build.
+
+`just preview-data` was broken in the same commit and by the same lack of
+checking: the example writes to stdout, and the recipe passed the output path as
+an argument, which it ignores. It never regenerated anything. Now redirects, and
+reproduces the committed `preview/data.json` byte for byte.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not
