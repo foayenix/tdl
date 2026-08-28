@@ -101,21 +101,44 @@ jobs:
       - name: Verify the sidecar
         run: just verify-freeze
 
+      # Name and upload BEFORE verifying. Twice now a bug in a verification
+      # step has thrown away a .dmg that was fine — the check ran before the
+      # upload, so a good build left nothing behind at all. The artifact is
+      # cheap; a wasted twenty-minute run is not. Verification still gates the
+      # release below, so a genuinely bad .dmg cannot be published; it just
+      # can no longer make the build disappear.
+      - name: Name the artifact after the version
+        id: dmg
+        run: |
+          built="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' 2>/dev/null | head -1)"
+          [ -n "$built" ] || { echo "no .dmg was produced" >&2; exit 1; }
+          version="${GITHUB_REF_NAME#v}"
+          [ "$version" != "$GITHUB_REF_NAME" ] || version="$(git rev-parse --short HEAD)"
+          out="TheDepositLedger-${version}-aarch64.dmg"
+          mv "$built" "$out"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+          shasum -a 256 "$out" | tee "$out.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: |
+            ${{ steps.dmg.outputs.path }}
+            ${{ steps.dmg.outputs.path }}.sha256
+
       # v0.1.0 shipped with no app inside it. A second [[bin]] in the crate —
       # the preview dumper — was picked up by the bundler as the main binary,
       # so Contents/MacOS/ held that and the sidecar and nothing else. macOS
       # reported it as "damaged", which was true: there was no executable to
       # run.
       #
-      # So check the .dmg, not the build tree: mount it and look at the app a
-      # person would actually drag out of it. Tauri deletes the staged .app
-      # once the .dmg is packaged, and an earlier version of this step went
-      # looking for that deleted directory and failed a build that was fine.
+      # So check the .dmg, and check it by mounting it: look at the app a
+      # person would actually drag out. Tauri deletes the staged .app once the
+      # .dmg is packaged, which is what an earlier version of this step went
+      # looking for.
       - name: Verify the .dmg
         run: |
-          dmg="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' 2>/dev/null | head -1)"
-          [ -n "$dmg" ] || { echo "no .dmg was produced" >&2; exit 1; }
-
+          dmg="${{ steps.dmg.outputs.path }}"
           mount="$(mktemp -d)"
           hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount" >/dev/null
           trap 'hdiutil detach "$mount" -quiet || true' EXIT
@@ -147,27 +170,6 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$app"
 
           echo "the .dmg holds an app that runs: '$exe', the sidecar, a valid signature"
-
-      - name: Name the artifact after the version
-        id: dmg
-        run: |
-          built="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' 2>/dev/null | head -1)"
-          [ -n "$built" ] || { echo "no .dmg was produced" >&2; exit 1; }
-          version="${GITHUB_REF_NAME#v}"
-          [ "$version" != "$GITHUB_REF_NAME" ] || version="$(git rev-parse --short HEAD)"
-          out="TheDepositLedger-${version}-aarch64.dmg"
-          mv "$built" "$out"
-          echo "path=$out" >> "$GITHUB_OUTPUT"
-          shasum -a 256 "$out" | tee "$out.sha256"
-
-      # Also on a dispatch run, which publishes no release — this is where a
-      # test build's .dmg comes from.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dmg
-          path: |
-            ${{ steps.dmg.outputs.path }}
-            ${{ steps.dmg.outputs.path }}.sha256
 
       # Notes live in .github/release-notes.md so they can be edited without
       # touching this file, and so no heredoc has to survive YAML indentation.

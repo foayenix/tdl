@@ -1799,6 +1799,40 @@ reproduces the committed `preview/data.json` byte for byte.
 
 ---
 
+### after 30 — three red runs, and what they were actually about
+
+v0.1.1 and v0.1.2 both **built correctly** and both failed. The bundle fix
+landed in v0.1.1: the log shows `Contents/MacOS/ledger` and
+`Contents/MacOS/The Deposit Ledger` both being signed. What failed each time
+was the step added to catch the previous bug.
+
+- **v0.1.1** — the new check looked for the staged `.app` in
+  `target/release/bundle/macos/`. Tauri deletes it once the `.dmg` is packaged
+  (`Cleaning .../The Deposit Ledger.app`, in the log, immediately above). The
+  check reported "no .app was produced" about a `.dmg` that was fine.
+- **v0.1.2** — tagged from a pull that predated the fix for the above, so it
+  ran the same broken check again. The tag carried
+  `src-tauri/examples/preview_dump.rs`, so the app in it was correct.
+
+The verification now mounts the `.dmg` and inspects the app a person would drag
+out of it, which is the artifact rather than the build tree.
+
+But the structural lesson is the ordering, not the check. The `.dmg` is now
+**named and uploaded before it is verified**. Verification still gates the
+release, so a genuinely broken bundle cannot be published — but it can no
+longer make a good build vanish. Twice a bug in a guard destroyed the thing the
+guard existed to protect, and both times the run left nothing behind to
+inspect. A guard that can delete twenty minutes of work on its own mistake is
+worse than no guard.
+
+Worth naming plainly: every one of these was written straight into the
+workflow and pushed without being run. The `.dmg` path cannot be exercised
+here — there is no Mac — but `tauri build --bundles deb` on Linux reproduced
+the original `preview_dump` bug exactly, and would have caught both stale-path
+errors too, since Linux cleans the staged tree the same way.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not
