@@ -22,7 +22,7 @@ jobs:
   dmg:
     # macos-14 and later are Apple Silicon, which is what this app targets.
     runs-on: macos-14
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +45,9 @@ jobs:
           workspaces: src-tauri
 
       - name: Install just
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
         run: brew install just
 
       - name: Install dependencies
@@ -95,7 +98,7 @@ jobs:
       - name: Name the artifact after the version
         id: dmg
         run: |
-          built="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' | head -1)"
+          built="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' 2>/dev/null | head -1)"
           [ -n "$built" ] || { echo "no .dmg was produced" >&2; exit 1; }
           version="${GITHUB_REF_NAME#v}"
           [ "$version" != "$GITHUB_REF_NAME" ] || version="$(git rev-parse --short HEAD)"
@@ -104,10 +107,14 @@ jobs:
           echo "path=$out" >> "$GITHUB_OUTPUT"
           shasum -a 256 "$out" | tee "$out.sha256"
 
+      # Also on a dispatch run, which publishes no release — this is where a
+      # test build's .dmg comes from.
       - uses: actions/upload-artifact@v4
         with:
           name: dmg
-          path: ${{ steps.dmg.outputs.path }}
+          path: |
+            ${{ steps.dmg.outputs.path }}
+            ${{ steps.dmg.outputs.path }}.sha256
 
       # Notes live in .github/release-notes.md so they can be edited without
       # touching this file, and so no heredoc has to survive YAML indentation.
