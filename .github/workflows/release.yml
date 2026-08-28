@@ -61,17 +61,23 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: just version "${GITHUB_REF_NAME#v}"
 
-      # Only when the secrets are present. Tauri signs and notarizes from these
-      # environment variables; setting them empty is worse than not setting
-      # them, so they are written to the environment only if there is a
-      # certificate to write. Until then the .dmg is unsigned and Gatekeeper
-      # asks once — see README, "Installing it".
-      - name: Enable Apple signing, if the secrets are present
+      # Apple Silicon refuses to run an arm64 binary with no valid signature,
+      # and reports it as "damaged" rather than unsigned — which is what the
+      # first v0.1.0 build did on a real Mac. Tauri copies the frozen sidecar
+      # into the bundle, so whatever seal the linker left is broken by the
+      # time the .app is packaged; it has to be signed after that, which is
+      # what Tauri does when it is given an identity.
+      #
+      # With a Developer ID secret, that identity is the real one and Tauri
+      # notarizes too. Without one, "-" is ad-hoc: enough for the app to run,
+      # not enough to skip the quarantine step in the release notes.
+      - name: Choose a signing identity
         env:
           CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
         run: |
           if [ -z "$CERTIFICATE" ]; then
-            echo "No APPLE_CERTIFICATE secret — building unsigned."
+            echo "No APPLE_CERTIFICATE secret — signing ad-hoc."
+            echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
             exit 0
           fi
           {
@@ -94,6 +100,16 @@ jobs:
       # whole point of freezing it (BUILD.md §3).
       - name: Verify the sidecar
         run: just verify-freeze
+
+      # The signature has to hold with the sidecar inside the bundle. If it
+      # does not, the app is "damaged" on arm64 — better to learn that here
+      # than after someone has downloaded it.
+      - name: Verify the signature
+        run: |
+          app="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' 2>/dev/null | head -1)"
+          [ -n "$app" ] || { echo "no .app was produced" >&2; exit 1; }
+          codesign --verify --deep --strict --verbose=2 "$app"
+          echo "signature holds with the sidecar inside the bundle"
 
       - name: Name the artifact after the version
         id: dmg

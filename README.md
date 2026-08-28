@@ -194,20 +194,28 @@ On anything else it says so and stops rather than wasting the ten minutes first.
 
 ### Installing it
 
-Open the `.dmg`, drag the app to Applications. The build is **not signed by
-Apple**, so macOS refuses the first launch. Once, after installing:
+Open the `.dmg`, drag the app to Applications. The build is signed **ad-hoc, not
+by Apple**, so macOS quarantines it and — on Apple Silicon — reports it as
+*damaged* rather than unsigned. It is not damaged. Once, after copying it to
+Applications:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/The Deposit Ledger.app"
 ```
 
-Or right-click the app → Open → confirm. Later launches are normal.
+Later launches are normal. Do the same line again after each update.
 
-The workflow already has the signing and notarization steps; they stay switched
-off until an `APPLE_CERTIFICATE` secret exists, and switch on with no code
-change once it does. The six secrets are `APPLE_CERTIFICATE` (a base64 `.p12`),
-`APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`,
-`APPLE_PASSWORD` (an app-specific password) and `APPLE_TEAM_ID`.
+Ad-hoc signing is not cosmetic: arm64 refuses to run a binary with no valid
+signature at all, and the frozen sidecar is copied into the bundle after the
+linker has sealed it, so the bundle has to be re-signed afterwards. CI does
+that, and `Verify the signature` fails the build if the seal does not hold.
+
+The workflow already has the Developer ID signing and notarization steps; they
+stay switched off until an `APPLE_CERTIFICATE` secret exists, and switch on with
+no code change once it does — at which point the `xattr` line goes away. The six
+secrets are `APPLE_CERTIFICATE` (a base64 `.p12`), `APPLE_CERTIFICATE_PASSWORD`,
+`APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` (an app-specific
+password) and `APPLE_TEAM_ID`.
 
 ### Updating
 
