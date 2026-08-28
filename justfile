@@ -189,3 +189,71 @@ verify-freeze:
     env -i PATH="$scrubbed" HOME="$(dirname "$db")" ./build/dist/ledger --db "$db" migrate
     env -i PATH="$scrubbed" HOME="$(dirname "$db")" ./build/dist/ledger --db "$db" log --minutes 20
     echo "the frozen sidecar runs with no Python present"
+
+# Check every prerequisite and say which one is missing. Nothing here changes
+# anything; it only looks.
+#
+# Diagnose a setup that will not run.
+doctor:
+    #!/usr/bin/env bash
+    # Deliberately not `set -e`: the point is to report every problem, not to
+    # stop at the first one.
+    ok=0; bad=0
+    say() { printf '  %-22s %s\n' "$1" "$2"; }
+    good() { say "$1" "ok — $2"; ok=$((ok+1)); }
+    fail() { say "$1" "MISSING — $2"; bad=$((bad+1)); }
+
+    echo "tools"
+    command -v cargo    >/dev/null 2>&1 && good cargo "$(cargo --version 2>/dev/null | cut -d' ' -f2)" \
+        || fail cargo "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+    command -v cargo-tauri >/dev/null 2>&1 && good cargo-tauri "$(cargo tauri --version 2>/dev/null)" \
+        || fail cargo-tauri "cargo install tauri-cli --version '^2'"
+    command -v node     >/dev/null 2>&1 && good node "$(node --version)" \
+        || fail node "brew install node"
+    command -v npm      >/dev/null 2>&1 && good npm "$(npm --version)" \
+        || fail npm "comes with node"
+
+    if [ -x .venv/bin/python ]; then
+        good venv "$(.venv/bin/python --version 2>&1 | cut -d' ' -f2)"
+    else
+        fail venv "just setup"
+    fi
+
+    echo ""
+    echo "this checkout"
+    [ -d node_modules ] && good node_modules "installed" || fail node_modules "just setup"
+    [ -x .venv/bin/ledger ] && good "ledger CLI" ".venv/bin/ledger" || fail "ledger CLI" "just setup"
+
+    triple="$(rustc --print host-tuple 2>/dev/null || echo unknown)"
+    if [ -e "src-tauri/binaries/ledger-$triple" ]; then
+        good sidecar "ledger-$triple"
+    else
+        fail sidecar "just sidecar   (needed by every cargo command)"
+    fi
+
+    echo ""
+    echo "the ledger"
+    database="${LEDGER_DB:-$HOME/Documents/ledger.sqlite}"
+    if [ -f "$database" ]; then
+        version="$({{py}} -c "import sqlite3,sys; print(sqlite3.connect(sys.argv[1]).execute('PRAGMA user_version').fetchone()[0])" "$database" 2>/dev/null || echo '?')"
+        good "$(basename "$database")" "schema v$version at $database"
+    else
+        say "$(basename "$database")" "absent — 'just dev' will create it"
+    fi
+
+    echo ""
+    echo "runtime"
+    if command -v lsof >/dev/null 2>&1 && lsof -i :5173 >/dev/null 2>&1; then
+        say "port 5173" "IN USE — something else has it; 'just dev' will fail"
+        bad=$((bad+1))
+    else
+        good "port 5173" "free"
+    fi
+
+    echo ""
+    if [ "$bad" -eq 0 ]; then
+        echo "nothing missing. 'just dev' should open a window."
+        echo "the first run compiles Tauri and takes several minutes with little output."
+    else
+        echo "$bad thing(s) to fix above."
+    fi
