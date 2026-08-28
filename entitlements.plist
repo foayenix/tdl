@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- The sidecar is a PyInstaller one-file binary. At run time it unpacks
+       Python.framework into a temp directory and dlopens it, and that
+       framework carries whatever signature it was built with — a real Team
+       ID. The process loading it is signed ad-hoc, and macOS library
+       validation refuses to map a library whose Team ID differs from the
+       process's:
+
+         mapping process and mapped file (non-platform) have different Team IDs
+
+       This entitlement is the documented exemption. It is needed for as long
+       as the sidecar carries its own interpreter, which is the whole point of
+       freezing it (BUILD.md §3). -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>

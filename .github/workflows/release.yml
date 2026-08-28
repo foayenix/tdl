@@ -169,7 +169,18 @@ jobs:
           # not start on arm64 at all.
           codesign --verify --deep --strict --verbose=2 "$app"
 
-          echo "the .dmg holds an app that runs: '$exe', the sidecar, a valid signature"
+          # And the sidecar has to actually RUN as shipped. `just verify-freeze`
+          # above tests build/dist/ledger, which is a different binary: it has
+          # not been through Tauri's signing pass. That pass is what broke
+          # v0.1.4 — re-signing the sidecar ad-hoc left it unable to dlopen the
+          # Python framework it unpacks, because their Team IDs no longer
+          # matched, and nothing here noticed until it was installed.
+          scratch="$(mktemp -d)"
+          "$app/Contents/MacOS/ledger" --db "$scratch/ledger.sqlite" migrate
+          "$app/Contents/MacOS/ledger" --db "$scratch/ledger.sqlite" log --minutes 20
+          echo "the shipped sidecar migrates and logs"
+
+          echo "the .dmg holds an app that runs: '$exe', a working sidecar, a valid signature"
 
       # Notes live in .github/release-notes.md so they can be edited without
       # touching this file, and so no heredoc has to survive YAML indentation.

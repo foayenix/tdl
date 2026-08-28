@@ -37,6 +37,9 @@
     ],
     "externalBin": [
       "binaries/ledger"
-    ]
+    ],
+    "macOS": {
+      "entitlements": "../entitlements.plist"
+    }
   }
 }

@@ -36,4 +36,9 @@ exe = EXE(
     strip=False,
     upx=False,
     console=True,
+    # Sign the collected binaries ad-hoc, so the Python framework this unpacks
+    # at run time and the process unpacking it carry the same (absent) Team ID.
+    # Ignored off macOS.
+    codesign_identity="-",
+    entitlements_file="entitlements.plist",
 )

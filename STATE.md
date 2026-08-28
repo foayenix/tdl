@@ -1864,6 +1864,46 @@ should carry a kind rather than be parsed from prose.
 
 ---
 
+### after 30 — the sidecar could not load its own Python
+
+The first-run button ran, and the sidecar died:
+
+> Failed to load Python shared library … mapping process and mapped file
+> (non-platform) have different Team IDs
+
+macOS library validation. The sidecar is a PyInstaller one-file binary: at run
+time it unpacks `Python.framework` into a temp directory and dlopens it. That
+framework carries the signature it was *built* with — a real Team ID. Tauri's
+ad-hoc signing pass replaced PyInstaller's signature on the outer executable
+with one that has no Team ID. Process and library then disagreed, and macOS
+refused the mapping.
+
+So the ad-hoc signing added to fix the "damaged" build broke the sidecar
+instead. Both are needed — arm64 will not run an unsigned binary, and the
+bundle has to be re-signed after the sidecar is copied in — so the answer is
+the documented exemption, `com.apple.security.cs.disable-library-validation`,
+applied in both places that sign: PyInstaller (`codesign_identity="-"`,
+`entitlements_file=`) and Tauri (`bundle.macOS.entitlements`).
+
+**But the real finding is why CI passed.** `just verify-freeze` runs
+`build/dist/ledger` — the raw PyInstaller output, before Tauri touches it. The
+binary that ships is a *different file*: same bytes plus a different signature,
+and the signature was the bug. A check that tests the artifact's ancestor is
+not testing the artifact.
+
+`Verify the .dmg` now runs the sidecar **from inside the mounted bundle** —
+migrate, then log — so the exact failure a person would hit is a build failure
+instead. That is the third check this week to move from the build tree to the
+shipped artifact, and the pattern is now hard to miss: every guard that looked
+at something upstream of the `.dmg` eventually let something through.
+
+Untested here, again: whether the entitlement resolves it. If it does not, the
+fallback is a `--onedir` freeze, where the framework sits in the bundle and is
+signed with everything else rather than unpacked at run time — a real
+restructure, since `externalBin` wants one file.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not
