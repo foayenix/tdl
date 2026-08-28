@@ -105,22 +105,34 @@ jobs:
       # the preview dumper — was picked up by the bundler as the main binary,
       # so Contents/MacOS/ held that and the sidecar and nothing else. macOS
       # reported it as "damaged", which was true: there was no executable to
-      # run. Never again silently: ask Info.plist what the executable is
-      # called, and insist it is there.
-      - name: Verify the bundle has an app in it
+      # run.
+      #
+      # So check the .dmg, not the build tree: mount it and look at the app a
+      # person would actually drag out of it. Tauri deletes the staged .app
+      # once the .dmg is packaged, and an earlier version of this step went
+      # looking for that deleted directory and failed a build that was fine.
+      - name: Verify the .dmg
         run: |
-          app="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' 2>/dev/null | head -1)"
-          [ -n "$app" ] || { echo "no .app was produced" >&2; exit 1; }
+          dmg="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' 2>/dev/null | head -1)"
+          [ -n "$dmg" ] || { echo "no .dmg was produced" >&2; exit 1; }
 
+          mount="$(mktemp -d)"
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount" >/dev/null
+          trap 'hdiutil detach "$mount" -quiet || true' EXIT
+
+          app="$(find "$mount" -maxdepth 1 -name '*.app' | head -1)"
+          [ -n "$app" ] || { echo "the .dmg holds no .app:" >&2; ls -1 "$mount" >&2; exit 1; }
+
+          # The executable Info.plist names has to be there. This is the check
+          # that v0.1.0 would have failed.
           exe="$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")"
           [ -x "$app/Contents/MacOS/$exe" ] || {
             echo "Info.plist names '$exe' but Contents/MacOS/ holds:" >&2
             ls -1 "$app/Contents/MacOS/" >&2
             exit 1
           }
-          echo "CFBundleExecutable '$exe' is present and executable"
 
-          # The sidecar too — the app cannot enrich or migrate without it.
+          # The sidecar too — without it the app can neither enrich nor migrate.
           [ -x "$app/Contents/MacOS/ledger" ] || {
             echo "the sidecar is missing from the bundle" >&2; exit 1; }
 
@@ -130,14 +142,11 @@ jobs:
             exit 1
           fi
 
-      # The signature has to hold with the sidecar inside the bundle. If it
-      # does not, the app will not start on arm64 — better to learn that here
-      # than after someone has downloaded it.
-      - name: Verify the signature
-        run: |
-          app="$(find src-tauri/target/release/bundle/macos -maxdepth 1 -name '*.app' | head -1)"
+          # The signature has to hold with the sidecar inside, or the app will
+          # not start on arm64 at all.
           codesign --verify --deep --strict --verbose=2 "$app"
-          echo "signature holds with the sidecar inside the bundle"
+
+          echo "the .dmg holds an app that runs: '$exe', the sidecar, a valid signature"
 
       - name: Name the artifact after the version
         id: dmg
