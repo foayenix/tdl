@@ -1,6 +1,6 @@
 [project]
 name = "ledger"
-version = "0.1.2"
+version = "0.1.3"
 description = "The Deposit Ledger — daily log and materia medica corpus."
 requires-python = ">=3.12"
 dependencies = []
