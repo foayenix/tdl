@@ -218,7 +218,13 @@ tag v:
     fi
     python3 scripts/set-version.py {{v}}
     git add -A
-    git commit -m "Release v{{v}}"
+    # The first tag of a version already stamped has nothing to commit, and
+    # that is not an error — tag the commit that is already there.
+    if git diff --cached --quiet; then
+        echo "already at {{v}}; tagging the current commit"
+    else
+        git commit -m "Release v{{v}}"
+    fi
     git tag -a "v{{v}}" -m "v{{v}}"
     echo ""
     echo "tagged v{{v}}. push it to build the .dmg:"
