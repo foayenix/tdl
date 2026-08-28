@@ -1710,6 +1710,55 @@ The preview is read-only by construction, not by policy. It has no database.
 
 ---
 
+### after 30 — a .dmg on a tag
+
+The app was buildable and not installable. `just release` works, but only on a
+machine that already has Rust, a Tauri toolchain and Python 3.12 — which is the
+cost of *developing* it and the wrong cost of *using* it. There is no Mac in
+the loop that builds this, so a GitHub-hosted macOS runner is the Mac.
+
+`.github/workflows/release.yml`, on a `v*` tag: freeze the sidecar, run the
+checks against the binary that ships, bundle, verify the sidecar runs with no
+Python present, publish the `.dmg` and its `.sha256`. The steps are the same
+recipes run by hand in the same order, so the pipeline cannot drift from
+`just dmg`.
+
+Three things this forced into the open:
+
+- **The version was in five places and nobody owned it.** `tauri.conf.json`,
+  `Cargo.toml`, `Cargo.lock`, `package.json`/`package-lock.json`,
+  `pyproject.toml`. Six releases in, a bundle still claiming `0.1.0` is worse
+  than no version at all. `scripts/set-version.py` owns all of them and
+  `just tag` is the ritual: stamp, commit, tag — refusing a dirty tree, because
+  a release should be a known tree.
+- **There was no `.icns`.** `bundle.icon` listed one 512px PNG, so macOS would
+  have got a generated icon at whatever fidelity the bundler managed. Generated
+  the real set; dropped the iOS and Android output, which §2 lists under
+  non-goals.
+- **`just check` calls `just sidecar`.** Session 30 already caught that a
+  `check` after a `freeze` would put the shim back, and the guard held here:
+  CI freezes first and the frozen binary survives the checks. Worth recording
+  that the guard earned its keep.
+
+**Not signed.** No Apple Developer account, so Gatekeeper refuses the first
+launch and the release notes say how to get past it once. The signing and
+notarization steps are written and switch on when an `APPLE_CERTIFICATE` secret
+exists — they are gated on the secret being non-empty rather than on the env
+vars being set, because Tauri reads empty vars as an instruction to sign with
+nothing.
+
+**No updater**, deliberately. Adding one means an HTTP client on the Rust side,
+which §3 forbids and §2's "offline-first" is the reason for. Updating is
+downloading the new `.dmg` and dragging it over. The ledger is a separate file
+and an update never touches it; if the schema moved, the frozen sidecar
+migrates on first launch, which is what `schema/` is doing inside the binary.
+
+Untested end to end: nothing here has run on a Mac. The YAML parses, the
+version stamper round-trips, `just dmg` refuses a non-Mac before it wastes ten
+minutes — but the first real tag is the first real test.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not

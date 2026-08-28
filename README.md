@@ -165,16 +165,61 @@ heading, the record header and the rail.
 
 ---
 
-## Building a release
+## Shipping a version
+
+The app is a `.dmg` for Apple Silicon. Cutting one is two commands:
 
 ```bash
-just freeze          # PyInstaller → src-tauri/binaries/ledger-<triple>
-just verify-freeze   # prove it runs where there is no Python at all
-just release         # check · freeze · npm build · cargo tauri build
+just tag 0.2.0                    # stamp the version, commit, tag
+git push origin HEAD --tags       # the tag is what builds it
 ```
 
-`just freeze` bundles `schema/` into the binary, because the sidecar has to be
-able to migrate on a machine that has never had Python.
+`.github/workflows/release.yml` picks the tag up, builds on a macOS runner, and
+publishes the `.dmg` and its `.sha256` under Releases. It runs the same recipes
+you would run by hand, in the same order, so the pipeline cannot drift from the
+local build.
+
+`just tag` refuses a dirty tree, and `scripts/set-version.py` writes the version
+into all four files that carry one — `tauri.conf.json`, `Cargo.toml`,
+`package.json`, `pyproject.toml` — so a bundle never claims a version the tag
+disagrees with.
+
+To build one by hand, on a Mac:
+
+```bash
+just dmg             # freeze · check · npm build · tauri build --bundles dmg
+```
+
+On anything else it says so and stops rather than wasting the ten minutes first.
+
+### Installing it
+
+Open the `.dmg`, drag the app to Applications. The build is **not signed by
+Apple**, so macOS refuses the first launch. Once, after installing:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/The Deposit Ledger.app"
+```
+
+Or right-click the app → Open → confirm. Later launches are normal.
+
+The workflow already has the signing and notarization steps; they stay switched
+off until an `APPLE_CERTIFICATE` secret exists, and switch on with no code
+change once it does. The six secrets are `APPLE_CERTIFICATE` (a base64 `.p12`),
+`APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`,
+`APPLE_PASSWORD` (an app-specific password) and `APPLE_TEAM_ID`.
+
+### Updating
+
+Download the new `.dmg` and drag it over the old app. **The ledger is a separate
+file and an update never touches it** — the app carries no database of its own.
+If the schema moved, the sidecar migrates on first launch, which is why
+`just freeze` bundles `schema/` into the binary: it has to be able to migrate on
+a machine that has never had Python.
+
+The app does not phone home. It has no updater, no telemetry and no HTTP client
+on the Rust side (BUILD.md §3); a new version reaches you because you went and
+got it.
 
 ---
 

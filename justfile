@@ -7,6 +7,10 @@ py := if path_exists(".venv/bin/python") == "true" { ".venv/bin/python" } else {
 # The target triple the sidecar filename carries (BUILD.md §3).
 triple := `rustc --print host-tuple 2>/dev/null || echo unknown`
 
+# The Tauri CLI. `npx tauri` is the same binary as a global `cargo-tauri` and
+# needs no separate install, so it is the default; a global one wins if present.
+tauri := if `command -v cargo-tauri >/dev/null 2>&1 && echo yes || echo no` == "yes" { "cargo tauri" } else { "npx --no-install tauri" }
+
 default:
     @just --list
 
@@ -166,13 +170,59 @@ freeze:
 release: check freeze
     #!/usr/bin/env bash
     set -euo pipefail
-    if ! command -v cargo-tauri >/dev/null 2>&1; then
-        echo "cargo-tauri is missing. Install it once with:" >&2
-        echo "    cargo install tauri-cli --version '^2'" >&2
+    npm run build
+    {{tauri}} build
+
+# Stamp a version across tauri.conf.json, Cargo.toml, package.json and
+# pyproject.toml, so a bundle never claims a version the tag disagrees with.
+#
+# Stamp a version across every file that carries one.
+version v:
+    @python3 scripts/set-version.py {{v}}
+
+# Build the macOS .dmg. Runs on macOS only — see .github/workflows/release.yml,
+# which runs exactly this on a runner when you push a tag.
+#
+# The sidecar is frozen first, so the checks run against the binary that
+# ships rather than the development shim.
+#
+# Build the macOS .dmg. macOS only.
+dmg:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Checked before anything is built: `freeze` and `check` take minutes, and
+    # failing after them on a machine that was never going to work is rude.
+    if [ "$(uname -s)" != "Darwin" ]; then
+        echo "a .dmg can only be built on macOS." >&2
+        echo "to build one without a Mac, push a tag:" >&2
+        echo "    just tag 0.2.0 && git push origin HEAD --tags" >&2
         exit 1
     fi
+    just freeze
+    just check
     npm run build
-    cargo tauri build
+    {{tauri}} build --bundles dmg
+    find src-tauri/target/release/bundle/dmg -name '*.dmg' -print
+
+# Cut a release: stamp the version, commit it, tag it, push.
+#
+# The tag is what the workflow watches; pushing it is what builds the .dmg.
+#
+# Cut a release: stamp, commit, tag.
+tag v:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "the tree is dirty. commit first — a release should be a known tree." >&2
+        exit 1
+    fi
+    python3 scripts/set-version.py {{v}}
+    git add -A
+    git commit -m "Release v{{v}}"
+    git tag -a "v{{v}}" -m "v{{v}}"
+    echo ""
+    echo "tagged v{{v}}. push it to build the .dmg:"
+    echo "    git push origin HEAD --tags"
 
 # Prove the sidecar runs where there is no Python at all.
 verify-freeze:
@@ -264,6 +314,8 @@ doctor:
 # preview cannot drift from the app: what it shows is what the real queries
 # returned. Point it at a scratch ledger, never a real one — the answers end
 # up in a file that gets published.
+#
+# Regenerate the browser preview's answer set.
 preview-data db="/tmp/demo.sqlite":
     cargo run --manifest-path src-tauri/Cargo.toml --bin preview_dump -- {{db}} preview/data.json
     @echo "preview/data.json  $(wc -c < preview/data.json) bytes"
@@ -273,6 +325,8 @@ preview-data db="/tmp/demo.sqlite":
 # Same screens, same CSS, same modules as the app; `./invoke` resolves to a
 # stub that answers from preview/data.json instead of calling Rust, and every
 # write is refused. See src/preview.ts.
+#
+# Build the read-only browser preview as one HTML file.
 preview:
     #!/usr/bin/env bash
     set -euo pipefail
