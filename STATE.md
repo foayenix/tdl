@@ -1661,6 +1661,55 @@ the macOS prerequisites.
 
 ---
 
+### after 30 — a browser preview, so the app can be seen without building it
+
+Building the app takes a Tauri toolchain, a Rust compile of several minutes,
+and a Python 3.12 venv. That is the right cost to *use* the ledger and the
+wrong cost to *look* at it, which was the thing being asked for.
+
+`just preview` builds `dist/preview.html`: one self-contained file — CSS and
+JS inline, the woff2 faces as `data:` URIs — carrying the app's own frontend
+over a frozen set of answers.
+
+Exactly two things are swapped. A Vite plugin (`PREVIEW=1`) resolves `./invoke`
+to `src/invoke.preview.ts` instead of `src/invoke.ts`, and injects
+`preview/data.json` as `window.__LEDGER_PREVIEW__`. Every screen, every
+stylesheet and every other module is byte-for-byte the app's. That constraint
+is the whole design: a preview holding its own copy of a screen would drift
+from the screen it previews, and then be worth nothing as a preview.
+
+The indirection this needed — routing every command through `src/invoke.ts`
+rather than importing `@tauri-apps/api/core` in `ledger.ts` — is one file and
+one import line, and it is worth having anyway: there is now a single place
+where the frontend meets the core.
+
+The answers come from `src-tauri/src/bin/preview_dump.rs`, which calls the same
+library functions `main.rs` calls, against a real SQLite file, and writes what
+they returned. So the numbers on the preview are query results. What they are
+results *about* is a nine-plant scratch ledger — demo data, per §8 never seeded
+into a real one — with deliberately unsourced claim rows, so §6 is visible on
+arrival.
+
+Two things came out of putting it in front of a host page rather than a window:
+
+- **Writes must say so, once.** Every write falls to a `PreviewOnly` error,
+  which the app already surfaces in its own banner at the point of the click.
+  A first attempt also flashed a preview-side message and was removed — two
+  banners saying the same thing read worse than one. What stays is a standing
+  line at the foot of the page, so the answer arrives before the click.
+- **A theme has three states, not two.** The app switches on
+  `:root[data-theme="dark"]`, which is all it needs, because it owns its own
+  root. A page inside a host also has the state where the viewer left the
+  choice on "system": nothing is stamped and only `prefers-color-scheme`
+  decides. The preview build mirrors the dark block into that query, read out
+  of `tokens.css` at build time rather than restated, so the two cannot drift.
+  Whether the *app* should honour `prefers-color-scheme` is a product decision
+  and is left alone — session 28 says nothing switches the dark tokens on yet.
+
+The preview is read-only by construction, not by policy. It has no database.
+
+---
+
 ## Open questions
 
 Carried from BUILD.md §8, plus what sessions have added. Raise these; do not
