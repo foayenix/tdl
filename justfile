@@ -257,3 +257,25 @@ doctor:
     else
         echo "$bad thing(s) to fix above."
     fi
+
+# Regenerate the browser preview's answer set from a database.
+#
+# preview_dump calls the same library functions the window calls, so the
+# preview cannot drift from the app: what it shows is what the real queries
+# returned. Point it at a scratch ledger, never a real one — the answers end
+# up in a file that gets published.
+preview-data db="/tmp/demo.sqlite":
+    cargo run --manifest-path src-tauri/Cargo.toml --bin preview_dump -- {{db}} preview/data.json
+    @echo "preview/data.json  $(wc -c < preview/data.json) bytes"
+
+# Build the read-only browser preview as one self-contained HTML file.
+#
+# Same screens, same CSS, same modules as the app; `./invoke` resolves to a
+# stub that answers from preview/data.json instead of calling Rust, and every
+# write is refused. See src/preview.ts.
+preview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    PREVIEW=1 npx vite build
+    node scripts/inline-preview.mjs
+    echo "dist/preview.html  $(wc -c < dist/preview.html) bytes"

@@ -1,6 +1,6 @@
 // The only way the frontend reaches the database is through a Rust command.
 // It holds no shell permission and opens no connection of its own.
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./invoke";
 
 export type Status = {
   path: string;
