@@ -216,6 +216,29 @@ tag v:
         echo "the tree is dirty. commit first — a release should be a known tree." >&2
         exit 1
     fi
+
+    # A tag builds the workflow *as of that commit*. Tagging a branch that is
+    # behind origin therefore builds an old pipeline, silently — v0.1.1, .2 and
+    # .3 all did exactly that, each one re-running a workflow whose bug had
+    # already been fixed upstream. The give-away is that `git pull` cannot
+    # fast-forward once this recipe's own commit is left unpushed, and says so
+    # in a line easily lost in the scrollback. So: check, and refuse.
+    branch="$(git rev-parse --abbrev-ref HEAD)"
+    git fetch --quiet origin "$branch" 2>/dev/null || true
+    behind="$(git rev-list --count "HEAD..origin/$branch" 2>/dev/null || echo 0)"
+    if [ "$behind" != "0" ]; then
+        echo "this branch is $behind commit(s) behind origin/$branch." >&2
+        echo "tagging now would build the workflow as it was, not as it is." >&2
+        echo "" >&2
+        echo "    git pull --ff-only origin $branch" >&2
+        echo "" >&2
+        echo "if that refuses, you have unpushed commits from an earlier tag." >&2
+        echo "they hold nothing but version stamps, which this recipe rewrites:" >&2
+        echo "" >&2
+        echo "    git reset --hard origin/$branch" >&2
+        exit 1
+    fi
+
     python3 scripts/set-version.py {{v}}
     git add -A
     # The first tag of a version already stamped has nothing to commit, and
@@ -227,8 +250,12 @@ tag v:
     fi
     git tag -a "v{{v}}" -m "v{{v}}"
     echo ""
-    echo "tagged v{{v}}. push it to build the .dmg:"
+    echo "tagged v{{v}}. push the branch AND the tag — both, always:"
+    echo ""
     echo "    git push origin HEAD --tags"
+    echo ""
+    echo "pushing the tag alone leaves this commit only on your machine, and"
+    echo "the next pull cannot fast-forward."
 
 # Prove the sidecar runs where there is no Python at all.
 verify-freeze:
